@@ -9,7 +9,7 @@ YOUTUBE_KEY = os.environ["YOUTUBE_API_KEY"]
 TMDB_KEY = os.environ["TMDB_API_KEY"]
 
 # Sustituye este texto por el ID real de tu lista de películas.
-PLAYLIST_ID = "https://www.youtube.com/playlist?list=PLaQN5GT3v1ko"
+PLAYLIST_ID = "PLaQN5GT3v1ko"
 
 YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
 TMDB_URL = "https://api.themoviedb.org/3/search/movie"
