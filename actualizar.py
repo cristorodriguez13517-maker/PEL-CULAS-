@@ -130,6 +130,7 @@ def main():
         )
 
     videos = get_youtube_videos()
+    print(f"VÍDEOS ENCONTRADOS EN YOUTUBE: {len(videos)}")
     catalog = []
 
     for video in videos:
