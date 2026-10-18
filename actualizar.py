@@ -36,54 +36,46 @@ def api_get(url, params):
 
 
 # ==================================================
-# CONSERVAR CORRECCIONES MANUALES ANTERIORES
+# LEER EL CATÁLOGO ANTERIOR
 # ==================================================
 
-def load_previous_manual_ratings():
-    """
-    Recupera las clasificaciones manuales del catálogo anterior.
-    La clave youtube_id permite conservarlas aunque cambie el orden.
-    """
-    manual_ratings = {}
-
+def load_previous_catalog():
     if not os.path.exists(CATALOG_FILE):
-        return manual_ratings
+        return []
 
     try:
         with open(CATALOG_FILE, "r", encoding="utf-8") as file:
-            previous_catalog = json.load(file)
+            catalog = json.load(file)
 
-        if not isinstance(previous_catalog, list):
-            return manual_ratings
+        if isinstance(catalog, list):
+            return [
+                item for item in catalog
+                if isinstance(item, dict)
+            ]
 
-        for item in previous_catalog:
-            if not isinstance(item, dict):
-                continue
-
-            video_id = item.get("youtube_id")
-            manual_rating = str(
-                item.get("age_rating_manual") or ""
-            ).strip()
-
-            if video_id and manual_rating:
-                manual_ratings[video_id] = manual_rating
+        print("Aviso: el catálogo anterior no es una lista.")
 
     except (OSError, json.JSONDecodeError) as error:
-        print(
-            "Aviso: no se pudieron recuperar las correcciones "
-            f"manuales anteriores: {error}"
+        # No sobrescribir un catálogo ilegible: podría perderse.
+        raise SystemExit(
+            f"No se puede leer {CATALOG_FILE}. "
+            f"No se modificará el catálogo: {error}"
         )
 
-    return manual_ratings
+    raise SystemExit(
+        "El catálogo anterior no tiene un formato válido. "
+        "Se cancela para evitar perder películas."
+    )
 
 
 # ==================================================
-# OBTENER LOS VÍDEOS DE LA LISTA DE YOUTUBE
+# OBTENER LOS VÍDEOS DE YOUTUBE
 # ==================================================
 
 def get_youtube_videos():
     videos = []
     page_token = None
+    seen_ids = set()
 
     while True:
         params = {
@@ -103,10 +95,10 @@ def get_youtube_videos():
             resource = snippet.get("resourceId", {})
             video_id = resource.get("videoId")
 
-            if not video_id:
+            if not video_id or video_id in seen_ids:
                 continue
 
-            title = snippet.get("title", "").strip()
+            title = (snippet.get("title") or "").strip()
 
             if title.lower() in (
                 "private video",
@@ -117,6 +109,8 @@ def get_youtube_videos():
                 "video eliminado"
             ):
                 continue
+
+            seen_ids.add(video_id)
 
             videos.append({
                 "youtube_id": video_id,
@@ -147,14 +141,13 @@ def clean_title(title):
         flags=re.IGNORECASE
     )
 
-    title = re.sub(r"\s+", " ", title).strip()
-    return title
+    return re.sub(r"\s+", " ", title).strip()
 
 
 def normalize(text):
     text = (text or "").lower().strip()
-
     text = unicodedata.normalize("NFKD", text)
+
     text = "".join(
         char for char in text
         if not unicodedata.combining(char)
@@ -162,13 +155,11 @@ def normalize(text):
 
     text = re.sub(r"\b(19\d{2}|20\d{2})\b", " ", text)
     text = re.sub(r"[^a-z0-9 ]", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-
-    return text
+    return re.sub(r"\s+", " ", text).strip()
 
 
 # ==================================================
-# DETECTAR CALIDAD DESDE EL TÍTULO/DESCRIPCIÓN
+# DETECTAR CALIDAD
 # ==================================================
 
 def detect_quality(title, description):
@@ -187,7 +178,7 @@ def detect_quality(title, description):
 
 
 # ==================================================
-# BUSCAR LA PELÍCULA CORRECTA EN TMDB
+# BUSCAR PELÍCULA EN TMDB
 # ==================================================
 
 def find_tmdb_movie(title):
@@ -263,12 +254,9 @@ def find_tmdb_movie(title):
         name_score = max(
             (
                 SequenceMatcher(
-                    None,
-                    wanted,
-                    normalize(name)
+                    None, wanted, normalize(name)
                 ).ratio()
-                for name in names
-                if name
+                for name in names if name
             ),
             default=0
         )
@@ -289,13 +277,12 @@ def find_tmdb_movie(title):
     if not best_movie or best_score < 0.72:
         print(
             f"TMDB: coincidencia insuficiente para '{title}'. "
-            f"Mejor puntuación: {best_score:.2f}"
+            f"Puntuación: {best_score:.2f}"
         )
         return None
 
     print(
-        f"TMDB: '{title}' -> "
-        f"'{best_movie.get('title')}' "
+        f"TMDB: '{title}' -> '{best_movie.get('title')}' "
         f"(ID {best_movie.get('id')})"
     )
 
@@ -303,103 +290,62 @@ def find_tmdb_movie(title):
 
 
 # ==================================================
-# OBTENER DETALLES DE LA PELÍCULA
+# DETALLES, EDAD Y LOGO
 # ==================================================
 
 def get_movie_details(movie_id):
-    params = {
-        "api_key": TMDB_KEY,
-        "language": "es-ES"
-    }
-
     return api_get(
         f"{TMDB_MOVIE_URL}/{movie_id}",
-        params
+        {
+            "api_key": TMDB_KEY,
+            "language": "es-ES"
+        }
     )
 
 
-# ==================================================
-# CLASIFICACIÓN POR EDADES DE ESPAÑA
-# ==================================================
-
 def get_spain_age_rating(movie_id):
-    """
-    Consulta las fechas de estreno y certificaciones de TMDB.
-    Devuelve la clasificación española si está disponible.
-    No inventa clasificaciones cuando TMDB no tiene el dato.
-    """
-    params = {
-        "api_key": TMDB_KEY
-    }
-
     try:
         data = api_get(
             f"{TMDB_MOVIE_URL}/{movie_id}/release_dates",
-            params
+            {"api_key": TMDB_KEY}
         )
 
         for country in data.get("results", []):
             if country.get("iso_3166_1") != "ES":
                 continue
 
-            releases = country.get("release_dates", [])
-
-            # Preferir una entrada que tenga clasificación.
-            for release in releases:
+            for release in country.get("release_dates", []):
                 certification = str(
                     release.get("certification") or ""
                 ).strip()
 
                 if certification:
-                    print(
-                        f"Clasificación española TMDB "
-                        f"(ID {movie_id}): {certification}"
-                    )
+                    print(f"Clasificación española: {certification}")
                     return certification
 
-            print(
-                f"TMDB: España no tiene clasificación "
-                f"disponible para la película ID {movie_id}"
-            )
             return ""
 
-        print(
-            f"TMDB: no hay datos de clasificación española "
-            f"para la película ID {movie_id}"
-        )
         return ""
 
     except requests.RequestException as error:
-        print(
-            f"No se pudo consultar la clasificación "
-            f"de la película {movie_id}: {error}"
-        )
+        print(f"Error al consultar clasificación: {error}")
         return ""
 
 
-# ==================================================
-# OBTENER EL LOGO OFICIAL DE LA PELÍCULA
-# ==================================================
-
 def get_movie_logo(movie_id):
-    params = {
-        "api_key": TMDB_KEY,
-        "include_image_language": "es,en,null"
-    }
-
     try:
         data = api_get(
             f"{TMDB_MOVIE_URL}/{movie_id}/images",
-            params
+            {
+                "api_key": TMDB_KEY,
+                "include_image_language": "es,en,null"
+            }
         )
     except requests.RequestException as error:
-        print(f"No se pudieron cargar los logos de {movie_id}: {error}")
+        print(f"Error al cargar logos de {movie_id}: {error}")
         return None
 
     logos = data.get("logos", [])
-
-    if not logos:
-        return None
 
     for language in ("es", "en", None):
         for logo in logos:
@@ -417,182 +363,215 @@ def get_movie_logo(movie_id):
 
 
 # ==================================================
-# CONSTRUIR EL CATÁLOGO
+# PROCESAR SOLAMENTE UN VÍDEO NUEVO
+# ==================================================
+
+def process_new_video(video):
+    title = video["youtube_title"]
+    description = video["description"]
+    video_id = video["youtube_id"]
+
+    entry = {
+        **video,
+        "title": title,
+        "tmdb_id": None,
+        "poster": None,
+        "logo": None,
+        "backdrop": None,
+        "overview": "",
+        "release_date": "",
+        "runtime": None,
+        "genres": [],
+        "quality": detect_quality(title, description),
+        "age_rating": "",
+        "age_rating_manual": "",
+        "match_status": "pendiente",
+        "youtube_url": (
+            "https://www.youtube.com/watch?v=" + video_id
+        )
+    }
+
+    try:
+        movie = find_tmdb_movie(title)
+
+        if not movie:
+            entry["match_status"] = "no_encontrada"
+            return entry
+
+        movie_id = movie.get("id")
+        details = get_movie_details(movie_id)
+
+        poster_path = (
+            details.get("poster_path")
+            or movie.get("poster_path")
+        )
+        backdrop_path = (
+            details.get("backdrop_path")
+            or movie.get("backdrop_path")
+        )
+
+        entry.update({
+            "title": (
+                details.get("title")
+                or movie.get("title")
+                or title
+            ),
+            "tmdb_id": movie_id,
+            "poster": (
+                IMAGE_BASE + "w780" + poster_path
+                if poster_path else None
+            ),
+            "backdrop": (
+                IMAGE_BASE + "original" + backdrop_path
+                if backdrop_path else None
+            ),
+            "overview": details.get("overview", ""),
+            "release_date": (
+                details.get("release_date")
+                or movie.get("release_date", "")
+            ),
+            "runtime": details.get("runtime"),
+            "genres": [
+                genre.get("name")
+                for genre in details.get("genres", [])
+                if genre.get("name")
+            ],
+            "age_rating": get_spain_age_rating(movie_id),
+            "match_status": "encontrada"
+        })
+
+        entry["logo"] = get_movie_logo(movie_id)
+
+        print(f"Carátula: {'OK' if entry['poster'] else 'No disponible'}")
+        print(f"Banner: {'OK' if entry['backdrop'] else 'No disponible'}")
+        print(f"Logo: {'OK' if entry['logo'] else 'No disponible'}")
+        print(
+            "Clasificación:",
+            entry["age_rating"] or "No disponible"
+        )
+
+    except requests.RequestException as error:
+        print(f"Error de API con '{title}': {error}")
+        entry["match_status"] = "error_api"
+
+    return entry
+
+
+# ==================================================
+# ACTUALIZAR CATÁLOGO SIN REPROCESAR LOS EXISTENTES
 # ==================================================
 
 def main():
     if not PLAYLIST_ID or "PEGA_AQUI" in PLAYLIST_ID:
-        raise SystemExit(
-            "Configura PLAYLIST_ID en actualizar.py."
-        )
+        raise SystemExit("Configura PLAYLIST_ID en actualizar.py.")
 
-    # Guardar las correcciones ANTES de reemplazar el JSON.
-    manual_ratings = load_previous_manual_ratings()
+    # Cargar y conservar íntegramente el catálogo anterior.
+    previous_catalog = load_previous_catalog()
 
-    print(
-        "Correcciones manuales de edad recuperadas: "
-        f"{len(manual_ratings)}"
-    )
+    existing_by_id = {
+        item.get("youtube_id"): item
+        for item in previous_catalog
+        if item.get("youtube_id")
+    }
 
+    print(f"Películas que ya hay en el catálogo: {len(existing_by_id)}")
+
+    # Esta consulta permite detectar qué vídeos son nuevos.
     videos = get_youtube_videos()
+    print(f"Vídeos encontrados en YouTube: {len(videos)}")
 
-    print(f"VÍDEOS ENCONTRADOS EN YOUTUBE: {len(videos)}")
+    new_videos = [
+        video for video in videos
+        if video["youtube_id"] not in existing_by_id
+    ]
 
-    catalog = []
-    ratings_cache = {}
+    print(f"Vídeos nuevos por procesar: {len(new_videos)}")
 
-    for index, video in enumerate(videos, start=1):
-        youtube_title = video["youtube_title"]
-        description = video["description"]
+    # Reintentar únicamente vídeos cuyo procesamiento anterior
+    # falló por un error de API, no las películas ya procesadas.
+    retry_ids = {
+        video_id
+        for video_id, entry in existing_by_id.items()
+        if entry.get("match_status") == "error_api"
+    }
+
+    retry_videos = [
+        video for video in videos
+        if video["youtube_id"] in retry_ids
+    ]
+
+    if retry_videos:
+        print(f"Vídeos con error anterior para reintentar: {len(retry_videos)}")
+
+    # Conservar los datos anteriores, incluidos cambios manuales.
+    catalog = list(previous_catalog)
+    positions = {
+        item.get("youtube_id"): index
+        for index, item in enumerate(catalog)
+        if item.get("youtube_id")
+    }
+
+    # Los vídeos ya procesados no se vuelven a consultar en TMDB.
+    # Solo se procesan novedades y se reintentan errores de API.
+    to_process = new_videos + retry_videos
+    processed_ids = set()
+
+    for index, video in enumerate(to_process, start=1):
         video_id = video["youtube_id"]
 
+        if video_id in processed_ids:
+            continue
+
+        processed_ids.add(video_id)
+
+        is_retry = video_id in positions
+        label = "Reintentando" if is_retry else "Nuevo"
+
         print(
-            f"\n[{index}/{len(videos)}] "
-            f"Procesando: {youtube_title}"
+            f"\n[{index}/{len(to_process)}] {label}: "
+            f"{video['youtube_title']}"
         )
 
-        quality = detect_quality(youtube_title, description)
+        entry = process_new_video(video)
 
-        entry = {
-            **video,
-            "title": youtube_title,
-            "tmdb_id": None,
-            "poster": None,
-            "logo": None,
-            "backdrop": None,
-            "overview": "",
-            "release_date": "",
-            "runtime": None,
-            "genres": [],
-            "quality": quality,
+        if is_retry:
+            # Si vuelve a fallar, conserva el registro anterior.
+            # Si tiene éxito, actualiza sus datos; respeta la edad manual.
+            old_entry = catalog[positions[video_id]]
 
-            # Clasificación automática y corrección manual.
-            "age_rating": "",
-            "age_rating_manual": manual_ratings.get(video_id, ""),
-
-            "match_status": "pendiente",
-            "youtube_url": (
-                "https://www.youtube.com/watch?v=" + video_id
-            )
-        }
-
-        try:
-            movie = find_tmdb_movie(youtube_title)
-
-            if movie:
-                movie_id = movie.get("id")
-                details = get_movie_details(movie_id)
-
-                poster_path = (
-                    details.get("poster_path")
-                    or movie.get("poster_path")
+            if entry["match_status"] != "error_api":
+                entry["age_rating_manual"] = (
+                    old_entry.get("age_rating_manual") or ""
                 )
-
-                backdrop_path = (
-                    details.get("backdrop_path")
-                    or movie.get("backdrop_path")
-                )
-
-                if movie_id not in ratings_cache:
-                    ratings_cache[movie_id] = get_spain_age_rating(
-                        movie_id
-                    )
-
-                age_rating = ratings_cache[movie_id]
-
-                entry.update({
-                    "title": (
-                        details.get("title")
-                        or movie.get("title")
-                        or youtube_title
-                    ),
-                    "tmdb_id": movie_id,
-                    "poster": (
-                        IMAGE_BASE + "w780" + poster_path
-                        if poster_path else None
-                    ),
-                    "backdrop": (
-                        IMAGE_BASE + "original" + backdrop_path
-                        if backdrop_path else None
-                    ),
-                    "overview": details.get("overview", ""),
-                    "release_date": (
-                        details.get("release_date")
-                        or movie.get("release_date", "")
-                    ),
-                    "runtime": details.get("runtime"),
-                    "genres": [
-                        genre.get("name")
-                        for genre in details.get("genres", [])
-                        if genre.get("name")
-                    ],
-                    "age_rating": age_rating,
-                    "match_status": "encontrada"
-                })
-
-                entry["logo"] = get_movie_logo(movie_id)
-
-                print(
-                    "Carátula:",
-                    "OK" if entry["poster"] else "No disponible"
-                )
-                print(
-                    "Banner:",
-                    "OK" if entry["backdrop"] else "No disponible"
-                )
-                print(
-                    "Logo:",
-                    "OK" if entry["logo"] else "No disponible"
-                )
-                print(
-                    "Edad automática:",
-                    age_rating if age_rating else "No disponible"
-                )
-
-        except requests.RequestException as error:
-            print(
-                f"Error de API procesando '{youtube_title}': {error}"
-            )
-            entry["match_status"] = "error_api"
-
-        # La clasificación manual se conserva incluso si TMDB
-        # falla temporalmente o no encuentra la película.
-        entry["age_rating_manual"] = manual_ratings.get(video_id, "")
-
-        catalog.append(entry)
+                catalog[positions[video_id]] = entry
+            else:
+                print("Se conserva el registro anterior tras el error.")
+        else:
+            positions[video_id] = len(catalog)
+            catalog.append(entry)
 
         time.sleep(0.15)
 
-    with open(CATALOG_FILE, "w", encoding="utf-8") as file:
-        json.dump(
-            catalog,
-            file,
-            ensure_ascii=False,
-            indent=2
-        )
+    # Guardar el catálogo combinado. No elimina películas antiguas
+    # aunque se retiren de la lista de reproducción de YouTube.
+    temp_file = CATALOG_FILE + ".tmp"
+
+    with open(temp_file, "w", encoding="utf-8") as file:
+        json.dump(catalog, file, ensure_ascii=False, indent=2)
+
+    os.replace(temp_file, CATALOG_FILE)
 
     matched = sum(
         1 for item in catalog
-        if item["match_status"] == "encontrada"
-    )
-
-    with_rating = sum(
-        1 for item in catalog
-        if item.get("age_rating")
-    )
-
-    with_manual = sum(
-        1 for item in catalog
-        if item.get("age_rating_manual")
+        if item.get("match_status") == "encontrada"
     )
 
     print("\n===================================")
-    print(f"Vídeos procesados: {len(catalog)}")
+    print(f"Películas conservadas en el catálogo: {len(catalog)}")
+    print(f"Vídeos nuevos detectados: {len(new_videos)}")
+    print(f"Vídeos procesados/reintentados: {len(processed_ids)}")
     print(f"Películas encontradas en TMDB: {matched}")
-    print(f"Clasificaciones españolas obtenidas: {with_rating}")
-    print(f"Correcciones manuales conservadas: {with_manual}")
-    print(f"Pendientes/error: {len(catalog) - matched}")
-    print("Archivo generado: peliculas.json")
+    print(f"Archivo generado: {CATALOG_FILE}")
     print("===================================")
 
 
