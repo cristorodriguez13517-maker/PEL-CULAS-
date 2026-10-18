@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,7 +8,6 @@
 
 <style>
 * { box-sizing: border-box; }
-
 html { scroll-behavior: auto; }
 
 body {
@@ -18,7 +18,6 @@ body {
     overflow-x: hidden;
 }
 
-/* CABECERA */
 .header {
     position: fixed;
     top: 0;
@@ -52,9 +51,7 @@ body {
     opacity: 0;
     transition: opacity .25s ease;
 }
-
 .header-info.visible { opacity: 1; }
-
 .header h1 { margin: 0; }
 
 .header h1 img {
@@ -80,14 +77,12 @@ body {
     margin: 8px 0 0;
 }
 
-/* CONTENIDO */
 .content {
     padding: 20px;
     margin-top: 320px;
     min-height: 200px;
 }
 
-/* CARÁTULAS */
 .movie-row {
     display: grid;
     grid-template-columns: repeat(8, 105px);
@@ -124,7 +119,6 @@ body {
     border-color: #E50914;
 }
 
-/* BUSCADOR */
 .search-container {
     position: fixed;
     top: 20px;
@@ -227,7 +221,6 @@ body {
 
 <body>
 
-<!-- BUSCADOR -->
 <div class="search-container">
     <button id="search-button" class="search-button"
         type="button" aria-label="Abrir buscador" tabindex="0">
@@ -241,7 +234,6 @@ body {
         autocomplete="off" tabindex="0">
 </div>
 
-<!-- CABECERA -->
 <div class="header" id="header">
     <div class="header-info" id="info">
         <h1 id="title"></h1>
@@ -250,7 +242,6 @@ body {
     </div>
 </div>
 
-<!-- CONTENIDO -->
 <div class="content">
     <div class="movie-row" id="movie-row"></div>
     <p class="status" id="status" hidden></p>
@@ -271,10 +262,9 @@ const statusElement = document.getElementById('status');
 
 let movies = [];
 let selectedMovie = null;
+let searchWasOpened = false;
 
-/* =====================================
-   CARGAR CATÁLOGO
-===================================== */
+/* CARGAR CATÁLOGO */
 
 async function loadMovies() {
     statusElement.hidden = false;
@@ -285,14 +275,11 @@ async function loadMovies() {
             cache: 'no-store'
         });
 
-        if (!response.ok) {
-            throw new Error('Error HTTP ' + response.status);
-        }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
 
         const catalog = await response.json();
-
         if (!Array.isArray(catalog)) {
-            throw new Error('peliculas.json no contiene una lista.');
+            throw new Error('El catálogo no es una lista.');
         }
 
         movies = catalog;
@@ -302,13 +289,11 @@ async function loadMovies() {
         console.error('Error cargando catálogo:', error);
         statusElement.hidden = false;
         statusElement.textContent =
-            'No se pudo cargar el catálogo. Comprueba que peliculas.json esté publicado junto a index.html.';
+            'No se pudo cargar peliculas.json. Comprueba que esté publicado junto a index.html.';
     }
 }
 
-/* =====================================
-   DATOS DE PELÍCULAS
-===================================== */
+/* DATOS */
 
 function getYoutubeUrl(movie) {
     if (movie.youtube_url) return movie.youtube_url;
@@ -322,21 +307,17 @@ function getYoutubeUrl(movie) {
 }
 
 function getYear(movie) {
-    if (movie.release_date) {
-        return String(movie.release_date).slice(0, 4);
-    }
-
+    if (movie.release_date) return String(movie.release_date).slice(0, 4);
     if (movie.year) return String(movie.year);
 
-    const title = movie.youtube_title || movie.title || '';
-    const match = title.match(/\b(19\d{2}|20\d{2})\b/);
+    const match = (movie.youtube_title || movie.title || '')
+        .match(/\b(19\d{2}|20\d{2})\b/);
 
     return match ? match[1] : '';
 }
 
 function getRuntime(movie) {
     const runtime = Number(movie.runtime || movie.duration_minutes || 0);
-
     if (!runtime || runtime <= 0) return '';
 
     const hours = Math.floor(runtime / 60);
@@ -344,30 +325,25 @@ function getRuntime(movie) {
 
     if (hours && minutes) return hours + ' h ' + minutes + ' min';
     if (hours) return hours + ' h';
-
     return minutes + ' min';
 }
 
 function getGenres(movie) {
     if (Array.isArray(movie.genres)) {
-        return movie.genres.map(genre => {
-            if (typeof genre === 'string') return genre;
-            return genre && genre.name ? genre.name : '';
-        }).filter(Boolean).join(', ');
+        return movie.genres.map(g =>
+            typeof g === 'string' ? g : (g && g.name ? g.name : '')
+        ).filter(Boolean).join(', ');
     }
 
     if (typeof movie.genres === 'string') return movie.genres;
-
     return movie.genre || movie.genre_label || '';
 }
 
 function getQuality(movie) {
     if (movie.quality) return movie.quality;
 
-    const text = (
-        (movie.youtube_title || '') + ' ' +
-        (movie.description || '')
-    ).toLowerCase();
+    const text = ((movie.youtube_title || '') + ' ' +
+        (movie.description || '')).toLowerCase();
 
     if (/\b(4k|2160p|uhd)\b/.test(text)) return '4K';
     if (/\b(fhd|1080p|full hd)\b/.test(text)) return 'FHD';
@@ -377,16 +353,11 @@ function getQuality(movie) {
 }
 
 function getAgeRating(movie) {
-    return movie.age_rating ||
-        movie.age_certification ||
-        movie.certification ||
-        movie.certificacion ||
-        '';
+    return movie.age_rating || movie.age_certification ||
+        movie.certification || movie.certificacion || '';
 }
 
-/* =====================================
-   CREAR CARÁTULAS
-===================================== */
+/* CARÁTULAS */
 
 function renderMovies() {
     movieRow.replaceChildren();
@@ -398,8 +369,7 @@ function renderMovies() {
 
     if (!validMovies.length) {
         statusElement.hidden = false;
-        statusElement.textContent =
-            'Todavía no hay películas disponibles en el catálogo.';
+        statusElement.textContent = 'Todavía no hay películas disponibles.';
         info.classList.remove('visible');
         header.style.backgroundImage = 'none';
         return;
@@ -413,7 +383,6 @@ function renderMovies() {
         card.tabIndex = 0;
 
         const url = getYoutubeUrl(movie);
-
         if (url) {
             card.href = url;
             card.target = '_blank';
@@ -451,27 +420,22 @@ function renderMovies() {
 
         card.addEventListener('focus', () => selectMovie(card));
         card.addEventListener('mouseenter', () => selectMovie(card));
-
         card.addEventListener('click', event => {
             if (!card.href) event.preventDefault();
         });
     });
 
-    const first = getVisibleCards()[0];
-
-    if (first) selectMovie(first);
+    filterMovies();
 }
 
-/* =====================================
-   ACTUALIZAR BANNER
-===================================== */
+/* BANNER */
 
 function selectMovie(card) {
     if (!card || card.hidden) return;
 
     selectedMovie = card;
 
-    document.querySelectorAll('.movie').forEach(movie => {
+    movieRow.querySelectorAll('.movie').forEach(movie => {
         movie.classList.toggle('selected', movie === card);
     });
 
@@ -498,22 +462,19 @@ function selectMovie(card) {
         titleElement.textContent = movieTitle;
     }
 
-    const metadata = [
+    metaElement.textContent = [
         card.dataset.year,
         card.dataset.runtime,
         card.dataset.genres,
         card.dataset.quality,
         card.dataset.age
-    ].filter(Boolean);
+    ].filter(Boolean).join('  |  ');
 
-    metaElement.textContent = metadata.join('  |  ');
     overviewElement.textContent = card.dataset.overview || '';
     info.classList.add('visible');
 }
 
-/* =====================================
-   NAVEGACIÓN CON MANDO
-===================================== */
+/* NAVEGACIÓN */
 
 function getVisibleCards() {
     return [...movieRow.querySelectorAll('.movie:not([hidden])')];
@@ -525,33 +486,38 @@ function getColumns() {
     return 8;
 }
 
-function focusSearchButton() {
-    searchButton.focus();
-}
-
-function focusFirstVisibleMovie() {
-    const cards = getVisibleCards();
-
-    if (cards.length) {
-        cards[0].focus();
-        scrollToMovie(cards[0]);
-    }
-}
-
 function scrollToMovie(card) {
     if (!card) return;
 
     const rect = card.getBoundingClientRect();
+    const topLimit = 325;
+    const bottomLimit = window.innerHeight - 12;
 
-    if (rect.top < 320 || rect.bottom > window.innerHeight) {
-        window.scrollTo({
-            top: Math.max(0, window.scrollY + rect.top - 340),
-            behavior: 'auto'
-        });
+    if (rect.top < topLimit) {
+        window.scrollBy(0, rect.top - topLimit);
+    } else if (rect.bottom > bottomLimit) {
+        window.scrollBy(0, rect.bottom - bottomLimit);
     }
 }
 
+function focusMovie(card) {
+    if (!card) return;
+    card.focus({ preventScroll: true });
+    selectMovie(card);
+    scrollToMovie(card);
+}
+
+function focusFirstMovie() {
+    const cards = getVisibleCards();
+    if (cards.length) focusMovie(cards[0]);
+}
+
+function focusSearchButton() {
+    searchButton.focus({ preventScroll: true });
+}
+
 function openSearch() {
+    searchWasOpened = true;
     searchInput.classList.add('active');
     searchInput.focus();
 }
@@ -561,33 +527,40 @@ function closeSearch() {
     filterMovies();
     searchInput.classList.remove('active');
     searchInput.blur();
-    searchButton.focus();
+    searchWasOpened = false;
+    focusSearchButton();
 }
 
-/* Compatibilidad con flechas y códigos Android TV */
+/*
+ Un solo controlador global.
+ Captura las teclas antes que otros elementos de la página.
+*/
+
 document.addEventListener('keydown', function(event) {
     const key = event.key;
-    const code = event.keyCode;
-    const target = event.target;
+    const code = event.keyCode || event.which;
 
-    const up = key === 'ArrowUp' || code === 19 || code === 38;
-    const down = key === 'ArrowDown' || code === 20 || code === 40;
-    const left = key === 'ArrowLeft' || code === 21 || code === 37;
-    const right = key === 'ArrowRight' || code === 22 || code === 39;
-    const ok = key === 'Enter' || key === ' ' || code === 23 || code === 66;
-    const back = key === 'Escape' || key === 'Backspace' || code === 4 || code === 27;
+    const up = key === 'ArrowUp' || code === 38 || code === 19;
+    const down = key === 'ArrowDown' || code === 40 || code === 20;
+    const left = key === 'ArrowLeft' || code === 37 || code === 21;
+    const right = key === 'ArrowRight' || code === 39 || code === 22;
+    const enter = key === 'Enter' || code === 13 || code === 23 || code === 66;
+    const escape = key === 'Escape' || code === 27 || code === 4;
 
-    /* Dentro del campo de búsqueda */
-    if (target === searchInput) {
-        if (back) {
+    const active = document.activeElement;
+    const isSearchInput = active === searchInput;
+    const isSearchButton = active === searchButton;
+    const activeCard = active && active.closest
+        ? active.closest('.movie')
+        : null;
+
+    /* BUSCADOR: las flechas izquierda/derecha conservan
+       su función normal para mover el cursor del texto. */
+
+    if (isSearchInput) {
+        if (escape) {
             event.preventDefault();
             closeSearch();
-            return;
-        }
-
-        if (down) {
-            event.preventDefault();
-            focusFirstVisibleMovie();
             return;
         }
 
@@ -597,12 +570,26 @@ document.addEventListener('keydown', function(event) {
             return;
         }
 
+        if (down) {
+            event.preventDefault();
+            focusFirstMovie();
+            return;
+        }
+
+        if (enter) {
+            event.preventDefault();
+            const first = getVisibleCards()[0];
+            if (first) focusMovie(first);
+            return;
+        }
+
         return;
     }
 
-    /* Sobre la lupa */
-    if (target === searchButton) {
-        if (ok) {
+    /* LUPA */
+
+    if (isSearchButton) {
+        if (enter) {
             event.preventDefault();
             openSearch();
             return;
@@ -614,22 +601,35 @@ document.addEventListener('keydown', function(event) {
             if (searchInput.classList.contains('active')) {
                 searchInput.focus();
             } else {
-                focusFirstVisibleMovie();
+                focusFirstMovie();
             }
 
             return;
         }
 
-        if (left || right || up) {
+        if (up || left || right) {
             event.preventDefault();
             return;
         }
     }
 
-    /* Sobre las carátulas */
-    const cards = getVisibleCards();
-    const index = cards.indexOf(target);
+    /* SI EL FOCO SE HA PERDIDO, RECUPERAR LA NAVEGACIÓN */
 
+    if (!activeCard) {
+        if (up || left) {
+            event.preventDefault();
+            focusSearchButton();
+        } else if (down || right) {
+            event.preventDefault();
+            focusFirstMovie();
+        }
+        return;
+    }
+
+    /* CARÁTULAS */
+
+    const cards = getVisibleCards();
+    const index = cards.indexOf(activeCard);
     if (index < 0) return;
 
     const columns = getColumns();
@@ -638,12 +638,7 @@ document.addEventListener('keydown', function(event) {
     if (right) {
         next = Math.min(index + 1, cards.length - 1);
     } else if (left) {
-        if (index % columns === 0) {
-            event.preventDefault();
-            focusSearchButton();
-            return;
-        }
-        next = index - 1;
+        next = index % columns === 0 ? index : index - 1;
     } else if (down) {
         next = Math.min(index + columns, cards.length - 1);
     } else if (up) {
@@ -653,42 +648,24 @@ document.addEventListener('keydown', function(event) {
             return;
         }
         next = index - columns;
+    } else if (escape) {
+        event.preventDefault();
+        focusSearchButton();
+        return;
     } else {
+        /* Enter en una carátula mantiene el enlace de YouTube. */
         return;
     }
 
     event.preventDefault();
 
-    if (cards[next]) {
-        cards[next].focus();
-        scrollToMovie(cards[next]);
-    }
-});
+    if (cards[next]) focusMovie(cards[next]);
+}, true);
 
-/* =====================================
-   BUSCADOR
-===================================== */
+/* BUSCADOR: eventos de clic y escritura */
 
 searchButton.addEventListener('click', openSearch);
 searchInput.addEventListener('input', filterMovies);
-
-searchInput.addEventListener('keydown', function(event) {
-    if (event.key === 'Escape') {
-        event.preventDefault();
-        closeSearch();
-    } else if (event.key === 'ArrowDown') {
-        event.preventDefault();
-        focusFirstVisibleMovie();
-    } else if (event.key === 'Enter') {
-        event.preventDefault();
-
-        const first = getVisibleCards()[0];
-
-        if (first && first.href) {
-            window.open(first.href, '_blank', 'noopener,noreferrer');
-        }
-    }
-});
 
 searchInput.addEventListener('blur', () => {
     if (!searchInput.value.trim()) {
@@ -720,42 +697,23 @@ function filterMovies() {
     if (firstMatch) {
         selectMovie(firstMatch);
     } else if (query) {
+        selectedMovie = null;
         info.classList.remove('visible');
         header.style.backgroundImage = 'none';
     }
 }
 
+/* REAJUSTAR NAVEGACIÓN AL CAMBIAR EL TAMAÑO */
+
+window.addEventListener('resize', () => {
+    if (selectedMovie && !selectedMovie.hidden) {
+        selectMovie(selectedMovie);
+    }
+});
+
 /* ARRANQUE */
+
 loadMovies();
-</script>
-
-
-    <script>
-window.addEventListener("keydown", function(e) {
-  const teclas = {
-    ArrowUp: "FLECHA ARRIBA",
-    ArrowDown: "FLECHA ABAJO",
-    ArrowLeft: "FLECHA IZQUIERDA",
-    ArrowRight: "FLECHA DERECHA",
-    Enter: "ENTER"
-  };
-
-  const mensaje = teclas[e.key] || ("Tecla detectada: " + e.key);
-
-  let aviso = document.getElementById("prueba-teclado");
-
-  if (!aviso) {
-    aviso = document.createElement("div");
-    aviso.id = "prueba-teclado";
-    aviso.style.cssText =
-      "position:fixed;top:10px;left:10px;z-index:999999;" +
-      "background:#e50914;color:white;padding:15px;" +
-      "font: bold 18px Arial;border-radius:8px;";
-    document.body.appendChild(aviso);
-  }
-
-  aviso.textContent = mensaje + " | código: " + e.keyCode;
-}, true);
 </script>
 
 </body>
