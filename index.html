@@ -1,4 +1,4 @@
-```html
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -7,9 +7,7 @@
 <title>Netflix Smart TV - FINAL</title>
 
 <style>
-* {
-    box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 html {
     scroll-behavior: auto;
@@ -23,7 +21,7 @@ body {
     overflow-x: hidden;
 }
 
-/* HEADER */
+/* CABECERA */
 .header {
     position: fixed;
     top: 0;
@@ -38,7 +36,6 @@ body {
     padding: 20px;
     z-index: 9999;
     overflow: hidden;
-    will-change: transform;
 }
 
 .header::before {
@@ -48,13 +45,13 @@ body {
     background:
         linear-gradient(
             to right,
-            rgba(0,0,0,0.9) 0%,
-            rgba(0,0,0,0.9) 40%,
+            rgba(0,0,0,.9) 0%,
+            rgba(0,0,0,.75) 35%,
             transparent 100%
         ),
         linear-gradient(
             to bottom,
-            transparent 20%,
+            transparent 30%,
             #000 100%
         );
     pointer-events: none;
@@ -63,9 +60,9 @@ body {
 .header-info {
     position: relative;
     z-index: 2;
-    max-width: 470px;
+    max-width: 500px;
     opacity: 0;
-    transition: opacity .3s;
+    transition: opacity .25s ease;
 }
 
 .header-info.visible {
@@ -74,6 +71,7 @@ body {
 
 .header h1 {
     margin: 0;
+    min-height: 1px;
 }
 
 .header h1 img {
@@ -85,15 +83,18 @@ body {
 }
 
 .details {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
-    margin: 8px 0;
+    margin: 10px 0;
+    line-height: 1.7;
+    max-width: 480px;
 }
 
 .overview {
     font-size: 12px;
-    line-height: 1.4;
+    line-height: 1.45;
     max-width: 450px;
+    margin: 8px 0 0;
 }
 
 /* CONTENIDO */
@@ -103,15 +104,13 @@ body {
     min-height: 200px;
 }
 
-/* FILA DE PELÍCULAS */
+/* CARÁTULAS */
 .movie-row {
     display: grid;
     grid-template-columns: repeat(8, 105px);
     gap: 12px;
     margin-top: 15px;
     align-items: start;
-    content-visibility: auto;
-    contain-intrinsic-size: 180px;
 }
 
 .movie {
@@ -139,10 +138,7 @@ body {
     transition: border-color .15s;
 }
 
-.movie.selected img {
-    border-color: #E50914;
-}
-
+.movie.selected img,
 .movie:focus-visible img {
     border-color: #E50914;
 }
@@ -155,30 +151,39 @@ body {
     display: flex;
     align-items: center;
     gap: 10px;
-    z-index: 10000;
+    z-index: 10001;
 }
 
 .search-button {
-    background: none;
-    border: none;
-    padding: 5px;
+    background: transparent;
+    border: 0;
+    padding: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     outline: none;
-    transition: transform .2s;
+    border-radius: 50%;
+    transform-origin: center;
+    transition: transform .2s ease;
 }
 
 .search-button svg {
-    width: 24px;
-    height: 24px;
+    display: block;
+    width: 26px;
+    height: 26px;
     fill: white;
 }
 
 .search-button:hover,
+.search-button:focus,
 .search-button:focus-visible {
-    transform: scale(1.2);
+    transform: scale(1.3);
+}
+
+/* No se dibuja un rectángulo alrededor de la lupa */
+.search-button:focus-visible {
+    outline: none;
 }
 
 .search-input {
@@ -187,30 +192,27 @@ body {
     padding: 8px 0;
     border: 0;
     border-radius: 20px;
-    background: rgba(0,0,0,.8);
+    background: rgba(0,0,0,.9);
     color: #fff;
     outline: none;
     opacity: 0;
     pointer-events: none;
-    transition:
-        width .2s,
-        opacity .2s,
-        padding .2s;
+    transition: width .2s, opacity .2s, padding .2s;
 }
 
 .search-input.active {
     width: 220px;
-    padding: 8px 12px;
+    padding: 9px 12px;
     border: 1px solid rgba(255,255,255,.5);
     opacity: 1;
     pointer-events: auto;
 }
 
 .search-input:focus {
-    border-color: rgba(255,255,255,.8);
+    border-color: rgba(255,255,255,.9);
 }
 
-/* MENSAJES DE ESTADO */
+/* ESTADO */
 .status {
     color: #aaa;
     font-size: 14px;
@@ -265,6 +267,7 @@ body {
         id="search-button"
         type="button"
         aria-label="Abrir buscador"
+        title="Buscar"
     >
         <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14z"/>
@@ -275,7 +278,7 @@ body {
         type="text"
         id="search"
         class="search-input"
-        placeholder="Buscar..."
+        placeholder="Buscar película..."
         aria-label="Buscar películas"
         autocomplete="off"
     >
@@ -314,7 +317,7 @@ let movies = [];
 let selectedMovie = null;
 
 /* =====================================
-   CARGAR PELICULAS.JSON
+   CARGAR CATÁLOGO
 ===================================== */
 
 async function loadMovies() {
@@ -328,27 +331,20 @@ async function loadMovies() {
         );
 
         if (!response.ok) {
-            throw new Error(
-                'No se pudo cargar peliculas.json. HTTP ' +
-                response.status
-            );
+            throw new Error('Error HTTP ' + response.status);
         }
 
         const catalog = await response.json();
 
         if (!Array.isArray(catalog)) {
-            throw new Error(
-                'peliculas.json debe contener una lista de películas.'
-            );
+            throw new Error('peliculas.json no contiene una lista.');
         }
 
         movies = catalog;
-
         renderMovies();
 
     } catch (error) {
-        console.error('Error al cargar el catálogo:', error);
-
+        console.error('Error cargando catálogo:', error);
         statusElement.hidden = false;
         statusElement.textContent =
             'No se pudo cargar el catálogo. Comprueba que peliculas.json esté publicado junto a index.html.';
@@ -356,25 +352,117 @@ async function loadMovies() {
 }
 
 /* =====================================
-   CREAR LAS CARÁTULAS
+   DATOS DE LA PELÍCULA
+===================================== */
+
+function getYoutubeUrl(movie) {
+    if (movie.youtube_url) {
+        return movie.youtube_url;
+    }
+
+    if (movie.youtube_id) {
+        return 'https://www.youtube.com/watch?v=' +
+            encodeURIComponent(movie.youtube_id);
+    }
+
+    return '';
+}
+
+function getYear(movie) {
+    if (movie.release_date) {
+        return String(movie.release_date).slice(0, 4);
+    }
+
+    if (movie.year) {
+        return String(movie.year);
+    }
+
+    const title = movie.youtube_title || movie.title || '';
+    const match = title.match(/\b(19\d{2}|20\d{2})\b/);
+
+    return match ? match[1] : '';
+}
+
+function getRuntime(movie) {
+    const runtime = Number(movie.runtime || movie.duration_minutes || 0);
+
+    if (!runtime || runtime <= 0) {
+        return '';
+    }
+
+    const hours = Math.floor(runtime / 60);
+    const minutes = runtime % 60;
+
+    if (hours && minutes) {
+        return hours + ' h ' + minutes + ' min';
+    }
+
+    if (hours) {
+        return hours + ' h';
+    }
+
+    return minutes + ' min';
+}
+
+function getGenres(movie) {
+    if (Array.isArray(movie.genres)) {
+        return movie.genres
+            .map(genre => {
+                if (typeof genre === 'string') return genre;
+                return genre && genre.name ? genre.name : '';
+            })
+            .filter(Boolean)
+            .join(', ');
+    }
+
+    if (typeof movie.genres === 'string') {
+        return movie.genres;
+    }
+
+    return movie.genre || movie.genre_label || '';
+}
+
+function getQuality(movie) {
+    if (movie.quality) {
+        return movie.quality;
+    }
+
+    const text = (
+        (movie.youtube_title || '') + ' ' +
+        (movie.description || '')
+    ).toLowerCase();
+
+    if (/\b(4k|2160p|uhd)\b/.test(text)) return '4K';
+    if (/\b(fhd|1080p|full hd)\b/.test(text)) return 'FHD';
+    if (/\b(hd|720p)\b/.test(text)) return 'HD';
+
+    return '';
+}
+
+function getAgeRating(movie) {
+    return movie.age_rating ||
+        movie.age_certification ||
+        movie.certification ||
+        movie.certificacion ||
+        '';
+}
+
+/* =====================================
+   CREAR CARÁTULAS
 ===================================== */
 
 function renderMovies() {
     movieRow.replaceChildren();
+    selectedMovie = null;
 
     const validMovies = movies.filter(movie =>
-        movie &&
-        (
-            movie.youtube_url ||
-            movie.youtube_id
-        )
+        movie && (movie.youtube_url || movie.youtube_id)
     );
 
-    if (validMovies.length === 0) {
+    if (!validMovies.length) {
         statusElement.hidden = false;
         statusElement.textContent =
             'Todavía no hay películas disponibles en el catálogo.';
-
         info.classList.remove('visible');
         header.style.backgroundImage = 'none';
         return;
@@ -388,26 +476,26 @@ function renderMovies() {
         card.className = 'movie';
         card.tabIndex = 0;
 
-        const youtubeUrl = getYoutubeUrl(movie);
+        const url = getYoutubeUrl(movie);
 
-        if (youtubeUrl) {
-            card.href = youtubeUrl;
+        if (url) {
+            card.href = url;
             card.target = '_blank';
             card.rel = 'noopener noreferrer';
         }
 
-        const movieTitle =
-            movie.title ||
-            movie.youtube_title ||
-            'Película';
+        card.dataset.title =
+            movie.title || movie.youtube_title || 'Película';
 
-        card.dataset.title = movieTitle;
         card.dataset.logo = movie.logo || movie.movie_logo || '';
         card.dataset.banner = movie.backdrop || '';
         card.dataset.poster = movie.poster || '';
         card.dataset.overview = movie.overview || '';
         card.dataset.year = getYear(movie);
-        card.dataset.quality = movie.quality || movie.genre_label || '';
+        card.dataset.runtime = getRuntime(movie);
+        card.dataset.genres = getGenres(movie);
+        card.dataset.quality = getQuality(movie);
+        card.dataset.age = getAgeRating(movie);
 
         const poster = document.createElement('img');
 
@@ -429,13 +517,9 @@ function renderMovies() {
         card.appendChild(poster);
         movieRow.appendChild(card);
 
-        card.addEventListener('focus', () => {
-            selectMovie(card);
-        });
+        card.addEventListener('focus', () => selectMovie(card));
 
-        card.addEventListener('mouseenter', () => {
-            selectMovie(card);
-        });
+        card.addEventListener('mouseenter', () => selectMovie(card));
 
         card.addEventListener('click', event => {
             if (!card.href) {
@@ -444,9 +528,7 @@ function renderMovies() {
         });
     });
 
-    setupKeyboardNavigation();
-
-    const firstMovie = movieRow.querySelector('.movie');
+    const firstMovie = getVisibleCards()[0];
 
     if (firstMovie) {
         selectMovie(firstMovie);
@@ -454,48 +536,16 @@ function renderMovies() {
 }
 
 /* =====================================
-   OBTENER EL ENLACE DE YOUTUBE
-===================================== */
-
-function getYoutubeUrl(movie) {
-    if (movie.youtube_url) {
-        return movie.youtube_url;
-    }
-
-    if (movie.youtube_id) {
-        return 'https://www.youtube.com/watch?v=' +
-            encodeURIComponent(movie.youtube_id);
-    }
-
-    return '';
-}
-
-/* =====================================
-   OBTENER EL AÑO
-===================================== */
-
-function getYear(movie) {
-    if (movie.release_date) {
-        return String(movie.release_date).slice(0, 4);
-    }
-
-    return movie.year ? String(movie.year) : '';
-}
-
-/* =====================================
-   ACTUALIZAR LA CABECERA
+   MOSTRAR INFORMACIÓN EN EL BANNER
 ===================================== */
 
 function selectMovie(card) {
-    if (!card) return;
+    if (!card || card.hidden) return;
 
     selectedMovie = card;
 
     document.querySelectorAll('.movie').forEach(movie => {
-        movie.classList.toggle(
-            'selected',
-            movie === card
-        );
+        movie.classList.toggle('selected', movie === card);
     });
 
     const banner = card.dataset.banner;
@@ -510,72 +560,41 @@ function selectMovie(card) {
     titleElement.replaceChildren();
 
     if (logo) {
-        const logoImage = document.createElement('img');
+        const image = document.createElement('img');
 
-        logoImage.src = logo;
-        logoImage.alt = movieTitle;
+        image.src = logo;
+        image.alt = movieTitle;
 
-        logoImage.addEventListener('error', () => {
+        image.addEventListener('error', () => {
             titleElement.replaceChildren();
             titleElement.textContent = movieTitle;
         }, { once: true });
 
-        titleElement.appendChild(logoImage);
+        titleElement.appendChild(image);
     } else {
         titleElement.textContent = movieTitle;
     }
 
-    const year = card.dataset.year;
-    const quality = card.dataset.quality;
+    const metadata = [
+        card.dataset.year,
+        card.dataset.runtime,
+        card.dataset.genres,
+        card.dataset.quality,
+        card.dataset.age
+    ].filter(Boolean);
 
-    metaElement.textContent = [year, quality]
-        .filter(Boolean)
-        .join(' | ');
-
-    overviewElement.textContent =
-        card.dataset.overview || '';
+    metaElement.textContent = metadata.join('  |  ');
+    overviewElement.textContent = card.dataset.overview || '';
 
     info.classList.add('visible');
 }
 
 /* =====================================
-   NAVEGACIÓN CON MANDO O TECLADO
+   NAVEGACIÓN CON MANDO
 ===================================== */
 
-function setupKeyboardNavigation() {
-    const cards = [...movieRow.querySelectorAll('.movie')];
-
-    cards.forEach((card, index) => {
-        card.addEventListener('keydown', event => {
-            let nextIndex = index;
-
-            if (event.key === 'ArrowRight') {
-                nextIndex = index + 1;
-            } else if (event.key === 'ArrowLeft') {
-                nextIndex = index - 1;
-            } else if (event.key === 'ArrowDown') {
-                nextIndex = index + getColumns();
-            } else if (event.key === 'ArrowUp') {
-                nextIndex = index - getColumns();
-            } else {
-                return;
-            }
-
-            event.preventDefault();
-
-            nextIndex = Math.max(
-                0,
-                Math.min(cards.length - 1, nextIndex)
-            );
-
-            const nextCard = cards[nextIndex];
-
-            if (nextCard && !nextCard.hidden) {
-                nextCard.focus();
-                scrollToMovie(nextCard);
-            }
-        });
-    });
+function getVisibleCards() {
+    return [...movieRow.querySelectorAll('.movie:not([hidden])')];
 }
 
 function getColumns() {
@@ -584,63 +603,172 @@ function getColumns() {
     return 8;
 }
 
+function focusFirstVisibleMovie() {
+    const first = getVisibleCards()[0];
+
+    if (first) {
+        first.focus();
+        scrollToMovie(first);
+    }
+}
+
+function focusSearchButton() {
+    searchButton.focus();
+}
+
 function scrollToMovie(card) {
     if (!card) return;
 
     const rect = card.getBoundingClientRect();
-    const headerHeight = 320;
 
-    if (rect.top < headerHeight || rect.bottom > window.innerHeight) {
+    if (rect.top < 320 || rect.bottom > window.innerHeight) {
         window.scrollTo({
-            top: window.scrollY + rect.top - headerHeight - 20,
+            top: Math.max(0, window.scrollY + rect.top - 340),
             behavior: 'auto'
         });
     }
 }
 
+/* Gestionar las flechas tanto en la lupa como en las portadas */
+document.addEventListener('keydown', event => {
+    const target = event.target;
+
+    /* Navegación desde la lupa */
+    if (target === searchButton) {
+        if (event.key === 'ArrowDown') {
+            event.preventDefault();
+
+            if (searchInput.classList.contains('active')) {
+                searchInput.focus();
+            } else {
+                focusFirstVisibleMovie();
+            }
+        }
+
+        if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+        }
+
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            openSearch();
+        }
+
+        return;
+    }
+
+    /* No interceptar las flechas mientras se escribe */
+    if (target === searchInput) {
+        if (event.key === 'ArrowUp') {
+            event.preventDefault();
+            focusSearchButton();
+        }
+
+        if (event.key === 'Escape' || event.key === 'Backspace' &&
+            searchInput.value === '') {
+            if (event.key === 'Escape') {
+                closeSearch(true);
+            }
+        }
+
+        return;
+    }
+
+    const cards = getVisibleCards();
+    const currentIndex = cards.indexOf(target);
+
+    if (currentIndex < 0) return;
+
+    let nextIndex = currentIndex;
+    let handled = true;
+    const columns = getColumns();
+
+    switch (event.key) {
+        case 'ArrowRight':
+            nextIndex = Math.min(currentIndex + 1, cards.length - 1);
+            break;
+
+        case 'ArrowLeft':
+            if (currentIndex % columns === 0) {
+                focusSearchButton();
+                event.preventDefault();
+                return;
+            }
+            nextIndex = currentIndex - 1;
+            break;
+
+        case 'ArrowDown':
+            nextIndex = Math.min(currentIndex + columns, cards.length - 1);
+            break;
+
+        case 'ArrowUp':
+            if (currentIndex < columns) {
+                focusSearchButton();
+                event.preventDefault();
+                return;
+            }
+            nextIndex = currentIndex - columns;
+            break;
+
+        default:
+            handled = false;
+    }
+
+    if (!handled) return;
+
+    event.preventDefault();
+
+    if (cards[nextIndex]) {
+        cards[nextIndex].focus();
+        scrollToMovie(cards[nextIndex]);
+    }
+});
+
 /* =====================================
    BUSCADOR
 ===================================== */
 
-searchButton.addEventListener('click', () => {
+function openSearch() {
     searchInput.classList.add('active');
     searchInput.focus();
-});
+}
+
+function closeSearch(returnToButton) {
+    searchInput.value = '';
+    filterMovies();
+    searchInput.classList.remove('active');
+    searchInput.blur();
+
+    if (returnToButton) {
+        searchButton.focus();
+    }
+}
+
+searchButton.addEventListener('click', openSearch);
 
 searchInput.addEventListener('input', filterMovies);
 
 searchInput.addEventListener('keydown', event => {
     if (event.key === 'Escape') {
-        searchInput.value = '';
-        filterMovies();
-        searchInput.classList.remove('active');
-        searchInput.blur();
-
-        if (selectedMovie) {
-            selectedMovie.focus();
-        }
+        event.preventDefault();
+        closeSearch(true);
+        return;
     }
 
     if (event.key === 'ArrowDown') {
         event.preventDefault();
-
-        const firstVisible =
-            movieRow.querySelector('.movie:not([hidden])');
-
-        if (firstVisible) {
-            firstVisible.focus();
-        }
+        focusFirstVisibleMovie();
+        return;
     }
 
     if (event.key === 'Enter') {
         event.preventDefault();
 
-        const firstVisible =
-            movieRow.querySelector('.movie:not([hidden])');
+        const first = getVisibleCards()[0];
 
-        if (firstVisible && firstVisible.href) {
+        if (first && first.href) {
             window.open(
-                firstVisible.href,
+                first.href,
                 '_blank',
                 'noopener,noreferrer'
             );
@@ -659,17 +787,16 @@ function filterMovies() {
         .trim()
         .toLocaleLowerCase('es');
 
-    const cards = [
-        ...movieRow.querySelectorAll('.movie')
-    ];
-
+    const cards = [...movieRow.querySelectorAll('.movie')];
     let firstMatch = null;
 
     cards.forEach(card => {
         const searchableText = [
             card.dataset.title,
             card.dataset.year,
+            card.dataset.genres,
             card.dataset.quality,
+            card.dataset.age,
             card.dataset.overview
         ].join(' ').toLocaleLowerCase('es');
 
@@ -684,11 +811,14 @@ function filterMovies() {
 
     if (firstMatch) {
         selectMovie(firstMatch);
+    } else if (query) {
+        info.classList.remove('visible');
+        header.style.backgroundImage = 'none';
     }
 }
 
 /* =====================================
-   INICIAR SHARKTV
+   INICIAR
 ===================================== */
 
 loadMovies();
@@ -696,4 +826,3 @@ loadMovies();
 
 </body>
 </html>
-```
