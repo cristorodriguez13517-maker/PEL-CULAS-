@@ -45,31 +45,28 @@ def load_previous_catalog():
 
     try:
         with open(CATALOG_FILE, "r", encoding="utf-8") as file:
-            catalog = json.load(file)
+            data = json.load(file)
 
-        if isinstance(catalog, list):
-            return [
-                item for item in catalog
-                if isinstance(item, dict)
-            ]
+        if not isinstance(data, list):
+            raise SystemExit(
+                "peliculas.json no contiene una lista válida. "
+                "Se cancela para evitar perder el catálogo."
+            )
 
-        print("Aviso: el catálogo anterior no es una lista.")
+        return [
+            item for item in data
+            if isinstance(item, dict) and item.get("youtube_id")
+        ]
 
     except (OSError, json.JSONDecodeError) as error:
-        # No sobrescribir un catálogo ilegible: podría perderse.
         raise SystemExit(
-            f"No se puede leer {CATALOG_FILE}. "
-            f"No se modificará el catálogo: {error}"
+            f"No se puede leer peliculas.json: {error}. "
+            "No se modificará el catálogo."
         )
-
-    raise SystemExit(
-        "El catálogo anterior no tiene un formato válido. "
-        "Se cancela para evitar perder películas."
-    )
 
 
 # ==================================================
-# OBTENER LOS VÍDEOS DE YOUTUBE
+# OBTENER LA LISTA COMPLETA DE YOUTUBE
 # ==================================================
 
 def get_youtube_videos():
@@ -88,17 +85,18 @@ def get_youtube_videos():
         if page_token:
             params["pageToken"] = page_token
 
+        # Si falla cualquier página, api_get lanza un error.
+        # No se guardará un catálogo incompleto.
         data = api_get(YOUTUBE_URL, params)
 
         for item in data.get("items", []):
             snippet = item.get("snippet", {})
             resource = snippet.get("resourceId", {})
             video_id = resource.get("videoId")
+            title = (snippet.get("title") or "").strip()
 
             if not video_id or video_id in seen_ids:
                 continue
-
-            title = (snippet.get("title") or "").strip()
 
             if title.lower() in (
                 "private video",
@@ -155,6 +153,7 @@ def normalize(text):
 
     text = re.sub(r"\b(19\d{2}|20\d{2})\b", " ", text)
     text = re.sub(r"[^a-z0-9 ]", " ", text)
+
     return re.sub(r"\s+", " ", text).strip()
 
 
@@ -178,7 +177,7 @@ def detect_quality(title, description):
 
 
 # ==================================================
-# BUSCAR PELÍCULA EN TMDB
+# BUSCAR LA PELÍCULA EN TMDB
 # ==================================================
 
 def find_tmdb_movie(title):
@@ -290,7 +289,7 @@ def find_tmdb_movie(title):
 
 
 # ==================================================
-# DETALLES, EDAD Y LOGO
+# DETALLES DE LA PELÍCULA
 # ==================================================
 
 def get_movie_details(movie_id):
@@ -302,6 +301,10 @@ def get_movie_details(movie_id):
         }
     )
 
+
+# ==================================================
+# CLASIFICACIÓN POR EDADES DE ESPAÑA
+# ==================================================
 
 def get_spain_age_rating(movie_id):
     try:
@@ -331,6 +334,10 @@ def get_spain_age_rating(movie_id):
         print(f"Error al consultar clasificación: {error}")
         return ""
 
+
+# ==================================================
+# LOGO DE LA PELÍCULA
+# ==================================================
 
 def get_movie_logo(movie_id):
     try:
@@ -363,7 +370,7 @@ def get_movie_logo(movie_id):
 
 
 # ==================================================
-# PROCESAR SOLAMENTE UN VÍDEO NUEVO
+# PROCESAR UN VÍDEO NUEVO
 # ==================================================
 
 def process_new_video(video):
@@ -405,6 +412,7 @@ def process_new_video(video):
             details.get("poster_path")
             or movie.get("poster_path")
         )
+
         backdrop_path = (
             details.get("backdrop_path")
             or movie.get("backdrop_path")
@@ -442,14 +450,6 @@ def process_new_video(video):
 
         entry["logo"] = get_movie_logo(movie_id)
 
-        print(f"Carátula: {'OK' if entry['poster'] else 'No disponible'}")
-        print(f"Banner: {'OK' if entry['backdrop'] else 'No disponible'}")
-        print(f"Logo: {'OK' if entry['logo'] else 'No disponible'}")
-        print(
-            "Clasificación:",
-            entry["age_rating"] or "No disponible"
-        )
-
     except requests.RequestException as error:
         print(f"Error de API con '{title}': {error}")
         entry["match_status"] = "error_api"
@@ -458,102 +458,84 @@ def process_new_video(video):
 
 
 # ==================================================
-# ACTUALIZAR CATÁLOGO SIN REPROCESAR LOS EXISTENTES
+# SINCRONIZAR CATÁLOGO CON YOUTUBE
 # ==================================================
 
 def main():
     if not PLAYLIST_ID or "PEGA_AQUI" in PLAYLIST_ID:
         raise SystemExit("Configura PLAYLIST_ID en actualizar.py.")
 
-    # Cargar y conservar íntegramente el catálogo anterior.
     previous_catalog = load_previous_catalog()
 
     existing_by_id = {
-        item.get("youtube_id"): item
+        item["youtube_id"]: item
         for item in previous_catalog
-        if item.get("youtube_id")
     }
 
-    print(f"Películas que ya hay en el catálogo: {len(existing_by_id)}")
+    print(f"Catálogo anterior: {len(existing_by_id)} películas")
 
-    # Esta consulta permite detectar qué vídeos son nuevos.
-    videos = get_youtube_videos()
-    print(f"Vídeos encontrados en YouTube: {len(videos)}")
+    # Si esta consulta falla, el programa termina y no escribe JSON.
+    youtube_videos = get_youtube_videos()
 
-    new_videos = [
-        video for video in videos
-        if video["youtube_id"] not in existing_by_id
-    ]
+    print(f"Vídeos actuales en YouTube: {len(youtube_videos)}")
 
-    print(f"Vídeos nuevos por procesar: {len(new_videos)}")
-
-    # Reintentar únicamente vídeos cuyo procesamiento anterior
-    # falló por un error de API, no las películas ya procesadas.
-    retry_ids = {
-        video_id
-        for video_id, entry in existing_by_id.items()
-        if entry.get("match_status") == "error_api"
+    youtube_ids = {
+        video["youtube_id"]
+        for video in youtube_videos
     }
 
-    retry_videos = [
-        video for video in videos
-        if video["youtube_id"] in retry_ids
-    ]
+    # Solo se conservan registros que siguen en la lista.
+    # Los vídeos nuevos se procesan por separado.
+    catalog = []
+    new_count = 0
+    retry_count = 0
+    removed_count = len(
+        set(existing_by_id.keys()) - youtube_ids
+    )
 
-    if retry_videos:
-        print(f"Vídeos con error anterior para reintentar: {len(retry_videos)}")
-
-    # Conservar los datos anteriores, incluidos cambios manuales.
-    catalog = list(previous_catalog)
-    positions = {
-        item.get("youtube_id"): index
-        for index, item in enumerate(catalog)
-        if item.get("youtube_id")
-    }
-
-    # Los vídeos ya procesados no se vuelven a consultar en TMDB.
-    # Solo se procesan novedades y se reintentan errores de API.
-    to_process = new_videos + retry_videos
-    processed_ids = set()
-
-    for index, video in enumerate(to_process, start=1):
+    for video in youtube_videos:
         video_id = video["youtube_id"]
+        old_entry = existing_by_id.get(video_id)
 
-        if video_id in processed_ids:
+        if old_entry is None:
+            # Vídeo nuevo: consulta TMDB una vez.
+            print(f"\nNUEVO: {video['youtube_title']}")
+            entry = process_new_video(video)
+            catalog.append(entry)
+            new_count += 1
+            time.sleep(0.15)
             continue
 
-        processed_ids.add(video_id)
+        if old_entry.get("match_status") == "error_api":
+            # Reintentar errores anteriores sin procesar de nuevo
+            # el resto de películas.
+            print(f"\nREINTENTO: {video['youtube_title']}")
+            refreshed = process_new_video(video)
 
-        is_retry = video_id in positions
-        label = "Reintentando" if is_retry else "Nuevo"
+            if refreshed.get("match_status") != "error_api":
+                # Mantener los campos adicionales/manuales anteriores.
+                merged = dict(old_entry)
+                merged.update(refreshed)
 
-        print(
-            f"\n[{index}/{len(to_process)}] {label}: "
-            f"{video['youtube_title']}"
-        )
-
-        entry = process_new_video(video)
-
-        if is_retry:
-            # Si vuelve a fallar, conserva el registro anterior.
-            # Si tiene éxito, actualiza sus datos; respeta la edad manual.
-            old_entry = catalog[positions[video_id]]
-
-            if entry["match_status"] != "error_api":
-                entry["age_rating_manual"] = (
+                merged["age_rating_manual"] = (
                     old_entry.get("age_rating_manual") or ""
                 )
-                catalog[positions[video_id]] = entry
+
+                catalog.append(merged)
             else:
-                print("Se conserva el registro anterior tras el error.")
-        else:
-            positions[video_id] = len(catalog)
-            catalog.append(entry)
+                # Si vuelve a fallar, conservar el registro anterior.
+                catalog.append(old_entry)
 
-        time.sleep(0.15)
+            retry_count += 1
+            time.sleep(0.15)
+            continue
 
-    # Guardar el catálogo combinado. No elimina películas antiguas
-    # aunque se retiren de la lista de reproducción de YouTube.
+        # Película ya procesada: no se consulta TMDB.
+        # Se conservan todos sus datos y ajustes manuales.
+        catalog.append(old_entry)
+
+    # Orden temporal según la lista actual de YouTube.
+    # Si la lista se leyó correctamente, los ausentes se eliminan.
     temp_file = CATALOG_FILE + ".tmp"
 
     with open(temp_file, "w", encoding="utf-8") as file:
@@ -561,17 +543,13 @@ def main():
 
     os.replace(temp_file, CATALOG_FILE)
 
-    matched = sum(
-        1 for item in catalog
-        if item.get("match_status") == "encontrada"
-    )
-
     print("\n===================================")
-    print(f"Películas conservadas en el catálogo: {len(catalog)}")
-    print(f"Vídeos nuevos detectados: {len(new_videos)}")
-    print(f"Vídeos procesados/reintentados: {len(processed_ids)}")
-    print(f"Películas encontradas en TMDB: {matched}")
-    print(f"Archivo generado: {CATALOG_FILE}")
+    print(f"Vídeos en la lista de YouTube: {len(youtube_videos)}")
+    print(f"Películas conservadas: {len(catalog)}")
+    print(f"Películas nuevas procesadas: {new_count}")
+    print(f"Registros con error reintentados: {retry_count}")
+    print(f"Películas eliminadas del catálogo: {removed_count}")
+    print(f"Archivo actualizado: {CATALOG_FILE}")
     print("===================================")
 
 
