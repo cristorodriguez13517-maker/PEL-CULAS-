@@ -20,6 +20,7 @@ YOUTUBE_URL = "https://www.googleapis.com/youtube/v3/playlistItems"
 TMDB_SEARCH_URL = "https://api.themoviedb.org/3/search/movie"
 TMDB_MOVIE_URL = "https://api.themoviedb.org/3/movie"
 IMAGE_BASE = "https://image.tmdb.org/t/p/"
+CATALOG_FILE = "peliculas.json"
 
 session = requests.Session()
 
@@ -32,6 +33,48 @@ def api_get(url, params):
     response = session.get(url, params=params, timeout=30)
     response.raise_for_status()
     return response.json()
+
+
+# ==================================================
+# CONSERVAR CORRECCIONES MANUALES ANTERIORES
+# ==================================================
+
+def load_previous_manual_ratings():
+    """
+    Recupera las clasificaciones manuales del catálogo anterior.
+    La clave youtube_id permite conservarlas aunque cambie el orden.
+    """
+    manual_ratings = {}
+
+    if not os.path.exists(CATALOG_FILE):
+        return manual_ratings
+
+    try:
+        with open(CATALOG_FILE, "r", encoding="utf-8") as file:
+            previous_catalog = json.load(file)
+
+        if not isinstance(previous_catalog, list):
+            return manual_ratings
+
+        for item in previous_catalog:
+            if not isinstance(item, dict):
+                continue
+
+            video_id = item.get("youtube_id")
+            manual_rating = str(
+                item.get("age_rating_manual") or ""
+            ).strip()
+
+            if video_id and manual_rating:
+                manual_ratings[video_id] = manual_rating
+
+    except (OSError, json.JSONDecodeError) as error:
+        print(
+            "Aviso: no se pudieron recuperar las correcciones "
+            f"manuales anteriores: {error}"
+        )
+
+    return manual_ratings
 
 
 # ==================================================
@@ -65,7 +108,6 @@ def get_youtube_videos():
 
             title = snippet.get("title", "").strip()
 
-            # Saltar vídeos privados o eliminados
             if title.lower() in (
                 "private video",
                 "deleted video",
@@ -170,7 +212,6 @@ def find_tmdb_movie(title):
     wanted = normalize(query)
     candidates_by_id = {}
 
-    # Probar español e inglés, con y sin año
     for language in ("es-ES", "en-US"):
         searches = [True, False] if year else [False]
 
@@ -198,13 +239,11 @@ def find_tmdb_movie(title):
 
                 if previous is None:
                     candidates_by_id[movie_id] = movie
-                else:
-                    # Preferir el resultado que tenga más información
-                    if (
-                        not previous.get("poster_path")
-                        and movie.get("poster_path")
-                    ):
-                        candidates_by_id[movie_id] = movie
+                elif (
+                    not previous.get("poster_path")
+                    and movie.get("poster_path")
+                ):
+                    candidates_by_id[movie_id] = movie
 
             time.sleep(0.05)
 
@@ -247,7 +286,6 @@ def find_tmdb_movie(title):
             best_score = score
             best_movie = movie
 
-    # Evitar asignar películas con títulos poco parecidos
     if not best_movie or best_score < 0.72:
         print(
             f"TMDB: coincidencia insuficiente para '{title}'. "
@@ -265,7 +303,7 @@ def find_tmdb_movie(title):
 
 
 # ==================================================
-# OBTENER DETALLES, GÉNEROS Y DURACIÓN
+# OBTENER DETALLES DE LA PELÍCULA
 # ==================================================
 
 def get_movie_details(movie_id):
@@ -278,6 +316,65 @@ def get_movie_details(movie_id):
         f"{TMDB_MOVIE_URL}/{movie_id}",
         params
     )
+
+
+# ==================================================
+# CLASIFICACIÓN POR EDADES DE ESPAÑA
+# ==================================================
+
+def get_spain_age_rating(movie_id):
+    """
+    Consulta las fechas de estreno y certificaciones de TMDB.
+    Devuelve la clasificación española si está disponible.
+    No inventa clasificaciones cuando TMDB no tiene el dato.
+    """
+    params = {
+        "api_key": TMDB_KEY
+    }
+
+    try:
+        data = api_get(
+            f"{TMDB_MOVIE_URL}/{movie_id}/release_dates",
+            params
+        )
+
+        for country in data.get("results", []):
+            if country.get("iso_3166_1") != "ES":
+                continue
+
+            releases = country.get("release_dates", [])
+
+            # Preferir una entrada que tenga clasificación.
+            for release in releases:
+                certification = str(
+                    release.get("certification") or ""
+                ).strip()
+
+                if certification:
+                    print(
+                        f"Clasificación española TMDB "
+                        f"(ID {movie_id}): {certification}"
+                    )
+                    return certification
+
+            print(
+                f"TMDB: España no tiene clasificación "
+                f"disponible para la película ID {movie_id}"
+            )
+            return ""
+
+        print(
+            f"TMDB: no hay datos de clasificación española "
+            f"para la película ID {movie_id}"
+        )
+        return ""
+
+    except requests.RequestException as error:
+        print(
+            f"No se pudo consultar la clasificación "
+            f"de la película {movie_id}: {error}"
+        )
+        return ""
 
 
 # ==================================================
@@ -304,13 +401,14 @@ def get_movie_logo(movie_id):
     if not logos:
         return None
 
-    # Preferencia: español, inglés y después cualquier idioma
     for language in ("es", "en", None):
         for logo in logos:
-            if logo.get("iso_639_1") == language and logo.get("file_path"):
+            if (
+                logo.get("iso_639_1") == language
+                and logo.get("file_path")
+            ):
                 return IMAGE_BASE + "w780" + logo["file_path"]
 
-    # Si no hay un logo en esos idiomas, usar el primero disponible
     for logo in logos:
         if logo.get("file_path"):
             return IMAGE_BASE + "w780" + logo["file_path"]
@@ -328,11 +426,20 @@ def main():
             "Configura PLAYLIST_ID en actualizar.py."
         )
 
+    # Guardar las correcciones ANTES de reemplazar el JSON.
+    manual_ratings = load_previous_manual_ratings()
+
+    print(
+        "Correcciones manuales de edad recuperadas: "
+        f"{len(manual_ratings)}"
+    )
+
     videos = get_youtube_videos()
 
     print(f"VÍDEOS ENCONTRADOS EN YOUTUBE: {len(videos)}")
 
     catalog = []
+    ratings_cache = {}
 
     for index, video in enumerate(videos, start=1):
         youtube_title = video["youtube_title"]
@@ -358,6 +465,11 @@ def main():
             "runtime": None,
             "genres": [],
             "quality": quality,
+
+            # Clasificación automática y corrección manual.
+            "age_rating": "",
+            "age_rating_manual": manual_ratings.get(video_id, ""),
+
             "match_status": "pendiente",
             "youtube_url": (
                 "https://www.youtube.com/watch?v=" + video_id
@@ -381,7 +493,13 @@ def main():
                     or movie.get("backdrop_path")
                 )
 
-                # Utilizar los datos de TMDB cuando haya coincidencia
+                if movie_id not in ratings_cache:
+                    ratings_cache[movie_id] = get_spain_age_rating(
+                        movie_id
+                    )
+
+                age_rating = ratings_cache[movie_id]
+
                 entry.update({
                     "title": (
                         details.get("title")
@@ -408,10 +526,10 @@ def main():
                         for genre in details.get("genres", [])
                         if genre.get("name")
                     ],
+                    "age_rating": age_rating,
                     "match_status": "encontrada"
                 })
 
-                # El logo se consulta por separado
                 entry["logo"] = get_movie_logo(movie_id)
 
                 print(
@@ -426,6 +544,10 @@ def main():
                     "Logo:",
                     "OK" if entry["logo"] else "No disponible"
                 )
+                print(
+                    "Edad automática:",
+                    age_rating if age_rating else "No disponible"
+                )
 
         except requests.RequestException as error:
             print(
@@ -433,12 +555,15 @@ def main():
             )
             entry["match_status"] = "error_api"
 
+        # La clasificación manual se conserva incluso si TMDB
+        # falla temporalmente o no encuentra la película.
+        entry["age_rating_manual"] = manual_ratings.get(video_id, "")
+
         catalog.append(entry)
 
-        # Pausa pequeña para no hacer peticiones demasiado seguidas
         time.sleep(0.15)
 
-    with open("peliculas.json", "w", encoding="utf-8") as file:
+    with open(CATALOG_FILE, "w", encoding="utf-8") as file:
         json.dump(
             catalog,
             file,
@@ -451,9 +576,21 @@ def main():
         if item["match_status"] == "encontrada"
     )
 
+    with_rating = sum(
+        1 for item in catalog
+        if item.get("age_rating")
+    )
+
+    with_manual = sum(
+        1 for item in catalog
+        if item.get("age_rating_manual")
+    )
+
     print("\n===================================")
     print(f"Vídeos procesados: {len(catalog)}")
     print(f"Películas encontradas en TMDB: {matched}")
+    print(f"Clasificaciones españolas obtenidas: {with_rating}")
+    print(f"Correcciones manuales conservadas: {with_manual}")
     print(f"Pendientes/error: {len(catalog) - matched}")
     print("Archivo generado: peliculas.json")
     print("===================================")
