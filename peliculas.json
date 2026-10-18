@@ -4,13 +4,20 @@
     "youtube_title": "Mayday (2026)",
     "description": "4K 2160p",
     "published_at": "2026-10-17T23:10:29Z",
-    "title": "Mayday (2026)",
-    "tmdb_id": null,
-    "poster": null,
-    "backdrop": null,
-    "overview": "",
-    "release_date": "",
-    "match_status": "pendiente",
+    "title": "Mayday",
+    "tmdb_id": 1137844,
+    "poster": "https://image.tmdb.org/t/p/w780/i3bkXZa5Ut1uuhKa0f0GmtXdLD3.jpg",
+    "logo": "https://image.tmdb.org/t/p/w780/pGv2k86yKzO4viRfKvRlYbbedQ2.png",
+    "backdrop": "https://image.tmdb.org/t/p/original/g7Ccid5kuD7A8hXWlsQiNfwOxaD.jpg",
+    "overview": "Cuando un piloto de la Marina estadounidense en misión ultrasecreta durante la Guerra Fría queda atrapado tras las líneas enemigas, su única oportunidad de sobrevivir es aliarse con un excéntrico exagente del KGB.",
+    "release_date": "2026-09-03",
+    "runtime": 111,
+    "genres": [
+      "Acción",
+      "Comedia"
+    ],
+    "quality": "4K",
+    "match_status": "encontrada",
     "youtube_url": "https://www.youtube.com/watch?v=JbrFdW_-45E"
   },
   {
@@ -18,13 +25,20 @@
     "youtube_title": "Ash (2025)",
     "description": "4K 2160p",
     "published_at": "2026-10-17T23:16:51Z",
-    "title": "Ash (2025)",
-    "tmdb_id": null,
-    "poster": null,
-    "backdrop": null,
-    "overview": "",
-    "release_date": "",
-    "match_status": "pendiente",
+    "title": "Ash",
+    "tmdb_id": 931349,
+    "poster": "https://image.tmdb.org/t/p/w780/5Oz39iyRuztiA8XqCNVDBuy2Ut3.jpg",
+    "logo": "https://image.tmdb.org/t/p/w780/eiArUmkEpN3cR9xIrO8gyrfFzxP.png",
+    "backdrop": "https://image.tmdb.org/t/p/original/9KSGUPHZpqhqkRXE2eebu701ONU.jpg",
+    "overview": "En el misterioso planeta Ash, Riya se despierta y descubre que su tripulación ha sido masacrada. Cuando un hombre llamado Brion llega para rescatarla, se desata un calvario de terror psicológico y físico mientras Riya y Brion deben decidir si pueden confiar el uno en el otro para sobrevivir.",
+    "release_date": "2025-03-20",
+    "runtime": 95,
+    "genres": [
+      "Terror",
+      "Ciencia ficción"
+    ],
+    "quality": "4K",
+    "match_status": "encontrada",
     "youtube_url": "https://www.youtube.com/watch?v=yp_vxNUi9xQ"
   }
 ]
