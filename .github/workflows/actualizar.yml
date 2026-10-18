@@ -1,9 +1,10 @@
+```yaml
 name: Actualizar catalogo SHARKTV
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 */6 * * *"
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: write
@@ -39,3 +40,4 @@ jobs:
             git commit -m "Actualizar catalogo de peliculas"
             git push
           fi
+```
