@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -6,169 +7,251 @@
 <title>Netflix Smart TV - FINAL</title>
 
 <style>
-• { box-sizing:border-box; }
-body { margin:0; background:#000; color:#fff; font-family:Arial,sans-serif; overflow-x:hidden; }
+* {
+    box-sizing: border-box;
+}
 
-html{
-scroll-behavior:auto;
+html {
+    scroll-behavior: auto;
+}
+
+body {
+    margin: 0;
+    background: #000;
+    color: #fff;
+    font-family: Arial, sans-serif;
+    overflow-x: hidden;
 }
 
 /* HEADER */
 .header {
-position:fixed;
-top:0;
-left:0;
-width:100%;
-height:320px;
-background-color:#000;
-background-size:cover;
-background-position:center;
-display:flex;
-align-items:center;
-padding:20px;
-z-index:9999;
-overflow:hidden;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 320px;
+    background-color: #000;
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    z-index: 9999;
+    overflow: hidden;
+    will-change: transform;
 }
 
-
 .header::before {
-content:"";
-position:absolute;
-inset:0;
-background:
-linear-gradient(to right, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.9) 40%, transparent 100%),
-linear-gradient(to bottom, transparent 20%, #000 100%);
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(
+            to right,
+            rgba(0,0,0,0.9) 0%,
+            rgba(0,0,0,0.9) 40%,
+            transparent 100%
+        ),
+        linear-gradient(
+            to bottom,
+            transparent 20%,
+            #000 100%
+        );
+    pointer-events: none;
 }
 
 .header-info {
-position:relative;
-z-index:2;
-max-width:470px;
-opacity:0;
-transition:0.3s;
+    position: relative;
+    z-index: 2;
+    max-width: 470px;
+    opacity: 0;
+    transition: opacity .3s;
 }
 
-.header-info.visible { opacity:1; }
+.header-info.visible {
+    opacity: 1;
+}
+
+.header h1 {
+    margin: 0;
+}
 
 .header h1 img {
-max-width:300px;
-max-height:80px;
+    display: block;
+    max-width: 300px;
+    max-height: 80px;
+    object-fit: contain;
+    object-position: left center;
 }
 
-/* META Y OVERVIEW */
 .details {
-font-size:15px;
-font-weight:bold;
-margin:8px 0;
+    font-size: 15px;
+    font-weight: bold;
+    margin: 8px 0;
 }
 
 .overview {
-font-size:12px;
-line-height:1.4;
-max-width:450px;
+    font-size: 12px;
+    line-height: 1.4;
+    max-width: 450px;
 }
 
-/* FILAS */
+/* CONTENIDO */
 .content {
-padding:20px;
-margin-top:320px;
+    padding: 20px;
+    margin-top: 320px;
+    min-height: 200px;
 }
 
-
-
+/* FILA DE PELÍCULAS */
 .movie-row {
-display:grid;
-grid-template-columns:repeat(8,104px);
-gap:12px;
-margin-top:15px;
-
-/* ACELERACIÓN */
-content-visibility:auto;
-contain-intrinsic-size:160px;
+    display: grid;
+    grid-template-columns: repeat(8, 105px);
+    gap: 12px;
+    margin-top: 15px;
+    align-items: start;
+    content-visibility: auto;
+    contain-intrinsic-size: 180px;
 }
 
-/* GPU ACCELERATION */
-.movie img,
-.header,
 .movie {
-will-change: transform;
-transform: translateZ(0);
+    display: block;
+    width: 105px;
+    height: 160px;
+    cursor: pointer;
+    outline: none;
+    text-decoration: none;
+    background: #111;
+    overflow: hidden;
+    transform: translateZ(0);
 }
 
-
-
-.movie-row.hidden { display:none; }
-
-/* PELIS */
-.movie {
-cursor:pointer;
-outline:none;
+.movie[hidden] {
+    display: none !important;
 }
+
 .movie img {
-width:105px;
-height:160px;
-object-fit:cover;
+    display: block;
+    width: 105px;
+    height: 160px;
+    object-fit: cover;
+    border: 3px solid transparent;
+    transition: border-color .15s;
 }
 
-.movie:hover,
-
-
-img{
-loading:lazy;
-}
 .movie.selected img {
-border:3px solid #E50914;
+    border-color: #E50914;
+}
+
+.movie:focus-visible img {
+    border-color: #E50914;
 }
 
 /* BUSCADOR */
 .search-container {
-position:fixed;
-top:20px;
-right:30px;
-display:flex;
-align-items:center;
-gap:10px;
-z-index:10000;
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 10000;
 }
 
 .search-button {
-background:none;
-border:none;
-cursor:pointer;
-display:flex;
-align-items:center;
-justify-content:center;
-outline:none;
-transition: transform .2s;
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    outline: none;
+    transition: transform .2s;
 }
 
 .search-button svg {
-width:24px;
-height:24px;
-fill:white;
+    width: 24px;
+    height: 24px;
+    fill: white;
 }
 
-.search-button:hover {
-transform: scale(1.2);
+.search-button:hover,
+.search-button:focus-visible {
+    transform: scale(1.2);
 }
 
 .search-input {
-width:0;
-padding:8px 12px;
-border-radius:20px;
-border:1px solid rgba(255,255,255,0.5);
-background:rgba(0,0,0,0.5);
-color:#fff;
-outline:none;
-opacity:0;
-transition:width 0.2s, opacity 0.2s, transform 0.2s;
+    width: 0;
+    min-width: 0;
+    padding: 8px 0;
+    border: 0;
+    border-radius: 20px;
+    background: rgba(0,0,0,.8);
+    color: #fff;
+    outline: none;
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        width .2s,
+        opacity .2s,
+        padding .2s;
 }
 
-.search-input.active,
+.search-input.active {
+    width: 220px;
+    padding: 8px 12px;
+    border: 1px solid rgba(255,255,255,.5);
+    opacity: 1;
+    pointer-events: auto;
+}
+
 .search-input:focus {
-width:220px;
-opacity:1;
-transform: scale(1.05);
+    border-color: rgba(255,255,255,.8);
+}
+
+/* MENSAJES DE ESTADO */
+.status {
+    color: #aaa;
+    font-size: 14px;
+    margin-top: 20px;
+}
+
+@media (max-width: 900px) {
+    .movie-row {
+        grid-template-columns: repeat(5, 105px);
+    }
+}
+
+@media (max-width: 600px) {
+    .header {
+        height: 320px;
+        padding: 15px;
+    }
+
+    .header h1 img {
+        max-width: 240px;
+        max-height: 70px;
+    }
+
+    .content {
+        margin-top: 320px;
+        padding: 12px;
+    }
+
+    .movie-row {
+        grid-template-columns: repeat(3, 105px);
+        gap: 10px;
+    }
+
+    .search-container {
+        right: 15px;
+        top: 15px;
+    }
+
+    .search-input.active {
+        width: 170px;
+    }
 }
 </style>
 </head>
@@ -177,314 +260,440 @@ transform: scale(1.05);
 
 <!-- BUSCADOR -->
 <div class="search-container">
-<button class="search-button" id="search-button">
-<svg viewBox="0 0 24 24">
-<path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14z"></path>
-</svg>
-</button>
-<input type="text" id="search" class="search-input" placeholder="Buscar...">
+    <button
+        class="search-button"
+        id="search-button"
+        type="button"
+        aria-label="Abrir buscador"
+    >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14z"/>
+        </svg>
+    </button>
+
+    <input
+        type="text"
+        id="search"
+        class="search-input"
+        placeholder="Buscar..."
+        aria-label="Buscar películas"
+        autocomplete="off"
+    >
 </div>
 
-<!-- HEADER -->
+<!-- CABECERA -->
 <div class="header" id="header">
-<div class="header-info" id="info">
-<h1 id="title"></h1>
-<div id="meta" class="details"></div>
-<p id="overview" class="overview"></p>
-</div>
+    <div class="header-info" id="info">
+        <h1 id="title"></h1>
+        <div id="meta" class="details"></div>
+        <p id="overview" class="overview"></p>
+    </div>
 </div>
 
 <!-- CONTENIDO -->
 <div class="content">
-
-
-
-<!-- INICIO FILA -->
-
-
-<div class="movie-row">
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-<a class="movie" tabindex="0"
-href="https://youtu.be/JbrFdW_-45E"
-target="_blank" rel="noopener noreferrer"
-data-title="Mayday (2026) Acción y Comedia"
-data-logo="https://image.tmdb.org/t/p/w780/9GCovwTkVq3k3kc73zqx4dbpU3A.png"
-data-banner="https://image.tmdb.org/t/p/original/4gyx49ibwQslyrwuUS1c58PJEEd.jpg"
-data-meta="2026 | 1h 51m | Acción y Comedia | 4K | 12+"
-data-overview="Cuando un piloto de la Marina estadounidense en misión ultrasecreta durante la Guerra Fría queda atrapado tras las líneas enemigas, su única oportunidad de sobrevivir es aliarse con un excéntrico exagente del KGB.">
-<img src="https://image.tmdb.org/t/p/w780/naKQcM3HRuaISCtsSx5ibVMTbDu.jpg">
-</a>
+    <div class="movie-row" id="movie-row"></div>
+    <p class="status" id="status" hidden></p>
 </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-</div>
-
-<!-- FINAL FILA -->
-
 
 <script>
-const movies = document.querySelectorAll('.movie');
-const rows = document.querySelectorAll('.movie-row');
+'use strict';
 
 const header = document.getElementById('header');
 const info = document.getElementById('info');
-const title = document.getElementById('title');
-const meta = document.getElementById('meta');
-const overview = document.getElementById('overview');
+const titleElement = document.getElementById('title');
+const metaElement = document.getElementById('meta');
+const overviewElement = document.getElementById('overview');
 
 const searchInput = document.getElementById('search');
 const searchButton = document.getElementById('search-button');
+const movieRow = document.getElementById('movie-row');
+const statusElement = document.getElementById('status');
 
-let activeRow = 0;
+let movies = [];
+let selectedMovie = null;
 
-/* INICIO */
-rows.forEach((r,i)=>{
-if(i!==0) r.classList.add('hidden');
-});
+/* =====================================
+   CARGAR PELICULAS.JSON
+===================================== */
 
-/* MOSTRAR FILA */
-function showRow(i){
-rows.forEach((r,index)=>{
-r.classList.toggle('hidden', index!==i);
-});
+async function loadMovies() {
+    statusElement.hidden = false;
+    statusElement.textContent = 'Cargando películas...';
 
-activeRow = i;
+    try {
+        const response = await fetch(
+            './peliculas.json?t=' + Date.now(),
+            { cache: 'no-store' }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                'No se pudo cargar peliculas.json. HTTP ' +
+                response.status
+            );
+        }
+
+        const catalog = await response.json();
+
+        if (!Array.isArray(catalog)) {
+            throw new Error(
+                'peliculas.json debe contener una lista de películas.'
+            );
+        }
+
+        movies = catalog;
+
+        renderMovies();
+
+    } catch (error) {
+        console.error('Error al cargar el catálogo:', error);
+
+        statusElement.hidden = false;
+        statusElement.textContent =
+            'No se pudo cargar el catálogo. Comprueba que peliculas.json esté publicado junto a index.html.';
+    }
 }
 
-/* SELECCIONAR PELÍCULA */
-function selectMovie(movie){
+/* =====================================
+   CREAR LAS CARÁTULAS
+===================================== */
 
-movies.forEach(m=>m.classList.remove('selected'));
-movie.classList.add('selected');
+function renderMovies() {
+    movieRow.replaceChildren();
 
-header.style.backgroundImage = url(${movie.dataset.banner});
+    const validMovies = movies.filter(movie =>
+        movie &&
+        (
+            movie.youtube_url ||
+            movie.youtube_id
+        )
+    );
 
-if(movie.dataset.logo){
-title.innerHTML = '';
-const img = document.createElement('img');
-img.src = movie.dataset.logo;
-title.appendChild(img);
+    if (validMovies.length === 0) {
+        statusElement.hidden = false;
+        statusElement.textContent =
+            'Todavía no hay películas disponibles en el catálogo.';
 
-} else {
-title.textContent = movie.dataset.title;
+        info.classList.remove('visible');
+        header.style.backgroundImage = 'none';
+        return;
+    }
+
+    statusElement.hidden = true;
+
+    validMovies.forEach(movie => {
+        const card = document.createElement('a');
+
+        card.className = 'movie';
+        card.tabIndex = 0;
+
+        const youtubeUrl = getYoutubeUrl(movie);
+
+        if (youtubeUrl) {
+            card.href = youtubeUrl;
+            card.target = '_blank';
+            card.rel = 'noopener noreferrer';
+        }
+
+        const movieTitle =
+            movie.title ||
+            movie.youtube_title ||
+            'Película';
+
+        card.dataset.title = movieTitle;
+        card.dataset.logo = movie.logo || movie.movie_logo || '';
+        card.dataset.banner = movie.backdrop || '';
+        card.dataset.poster = movie.poster || '';
+        card.dataset.overview = movie.overview || '';
+        card.dataset.year = getYear(movie);
+        card.dataset.quality = movie.quality || movie.genre_label || '';
+
+        const poster = document.createElement('img');
+
+        poster.alt = '';
+        poster.loading = 'lazy';
+        poster.decoding = 'async';
+        poster.draggable = false;
+
+        if (movie.poster) {
+            poster.src = movie.poster;
+        } else {
+            poster.style.visibility = 'hidden';
+        }
+
+        poster.addEventListener('error', () => {
+            poster.style.visibility = 'hidden';
+        });
+
+        card.appendChild(poster);
+        movieRow.appendChild(card);
+
+        card.addEventListener('focus', () => {
+            selectMovie(card);
+        });
+
+        card.addEventListener('mouseenter', () => {
+            selectMovie(card);
+        });
+
+        card.addEventListener('click', event => {
+            if (!card.href) {
+                event.preventDefault();
+            }
+        });
+    });
+
+    setupKeyboardNavigation();
+
+    const firstMovie = movieRow.querySelector('.movie');
+
+    if (firstMovie) {
+        selectMovie(firstMovie);
+    }
 }
 
-meta.textContent = movie.dataset.meta;
-overview.textContent = movie.dataset.overview;
+/* =====================================
+   OBTENER EL ENLACE DE YOUTUBE
+===================================== */
 
-info.classList.add('visible');
+function getYoutubeUrl(movie) {
+    if (movie.youtube_url) {
+        return movie.youtube_url;
+    }
+
+    if (movie.youtube_id) {
+        return 'https://www.youtube.com/watch?v=' +
+            encodeURIComponent(movie.youtube_id);
+    }
+
+    return '';
 }
 
-/* SCROLL AUTOMÁTICO */
-function scrollToMovie(movie){
+/* =====================================
+   OBTENER EL AÑO
+===================================== */
 
-const headerHeight = 320;
+function getYear(movie) {
+    if (movie.release_date) {
+        return String(movie.release_date).slice(0, 4);
+    }
 
-const movieRect = movie.getBoundingClientRect();
-
-const movieTop = movieRect.top + window.scrollY;
-
-window.scrollTo(0, movieTop - headerHeight - 20);
+    return movie.year ? String(movie.year) : '';
 }
 
-/* EVENTOS */
-rows.forEach((row,rowIndex)=>{
+/* =====================================
+   ACTUALIZAR LA CABECERA
+===================================== */
 
-row.querySelectorAll('.movie').forEach(movie=>{
+function selectMovie(card) {
+    if (!card) return;
 
-movie.addEventListener('focus', ()=>{
+    selectedMovie = card;
 
-showRow(rowIndex);
+    document.querySelectorAll('.movie').forEach(movie => {
+        movie.classList.toggle(
+            'selected',
+            movie === card
+        );
+    });
 
-selectMovie(movie);
+    const banner = card.dataset.banner;
 
-scrollToMovie(movie);
+    header.style.backgroundImage = banner
+        ? 'url("' + banner + '")'
+        : 'none';
 
-});
+    const movieTitle = card.dataset.title || 'Película';
+    const logo = card.dataset.logo;
 
-movie.addEventListener('mouseenter', ()=>{
-showRow(rowIndex);
+    titleElement.replaceChildren();
 
-selectMovie(movie);
+    if (logo) {
+        const logoImage = document.createElement('img');
 
-scrollToMovie(movie);
+        logoImage.src = logo;
+        logoImage.alt = movieTitle;
 
-});
+        logoImage.addEventListener('error', () => {
+            titleElement.replaceChildren();
+            titleElement.textContent = movieTitle;
+        }, { once: true });
 
-});
+        titleElement.appendChild(logoImage);
+    } else {
+        titleElement.textContent = movieTitle;
+    }
 
-});
+    const year = card.dataset.year;
+    const quality = card.dataset.quality;
 
-/* FLECHAS */
-document.addEventListener('keydown', e=>{
+    metaElement.textContent = [year, quality]
+        .filter(Boolean)
+        .join(' | ');
 
-if(e.key==='ArrowDown' && activeRow<rows.length-1){
+    overviewElement.textContent =
+        card.dataset.overview || '';
 
-showRow(activeRow+1);
-
-const nextMovie = rows[activeRow].querySelector('.movie');
-
-if(nextMovie){
-nextMovie.focus();
+    info.classList.add('visible');
 }
 
+/* =====================================
+   NAVEGACIÓN CON MANDO O TECLADO
+===================================== */
+
+function setupKeyboardNavigation() {
+    const cards = [...movieRow.querySelectorAll('.movie')];
+
+    cards.forEach((card, index) => {
+        card.addEventListener('keydown', event => {
+            let nextIndex = index;
+
+            if (event.key === 'ArrowRight') {
+                nextIndex = index + 1;
+            } else if (event.key === 'ArrowLeft') {
+                nextIndex = index - 1;
+            } else if (event.key === 'ArrowDown') {
+                nextIndex = index + getColumns();
+            } else if (event.key === 'ArrowUp') {
+                nextIndex = index - getColumns();
+            } else {
+                return;
+            }
+
+            event.preventDefault();
+
+            nextIndex = Math.max(
+                0,
+                Math.min(cards.length - 1, nextIndex)
+            );
+
+            const nextCard = cards[nextIndex];
+
+            if (nextCard && !nextCard.hidden) {
+                nextCard.focus();
+                scrollToMovie(nextCard);
+            }
+        });
+    });
 }
 
-if(e.key==='ArrowUp' && activeRow>0){
-
-showRow(activeRow-1);
-
-const prevMovie = rows[activeRow].querySelector('.movie');
-
-if(prevMovie){
-prevMovie.focus();
+function getColumns() {
+    if (window.innerWidth <= 600) return 3;
+    if (window.innerWidth <= 900) return 5;
+    return 8;
 }
 
+function scrollToMovie(card) {
+    if (!card) return;
+
+    const rect = card.getBoundingClientRect();
+    const headerHeight = 320;
+
+    if (rect.top < headerHeight || rect.bottom > window.innerHeight) {
+        window.scrollTo({
+            top: window.scrollY + rect.top - headerHeight - 20,
+            behavior: 'auto'
+        });
+    }
 }
 
+/* =====================================
+   BUSCADOR
+===================================== */
+
+searchButton.addEventListener('click', () => {
+    searchInput.classList.add('active');
+    searchInput.focus();
 });
 
-/* BUSCADOR */
-searchButton.addEventListener('click', ()=>{
+searchInput.addEventListener('input', filterMovies);
 
-searchInput.classList.add('active');
+searchInput.addEventListener('keydown', event => {
+    if (event.key === 'Escape') {
+        searchInput.value = '';
+        filterMovies();
+        searchInput.classList.remove('active');
+        searchInput.blur();
 
-searchInput.focus();
+        if (selectedMovie) {
+            selectedMovie.focus();
+        }
+    }
 
+    if (event.key === 'ArrowDown') {
+        event.preventDefault();
+
+        const firstVisible =
+            movieRow.querySelector('.movie:not([hidden])');
+
+        if (firstVisible) {
+            firstVisible.focus();
+        }
+    }
+
+    if (event.key === 'Enter') {
+        event.preventDefault();
+
+        const firstVisible =
+            movieRow.querySelector('.movie:not([hidden])');
+
+        if (firstVisible && firstVisible.href) {
+            window.open(
+                firstVisible.href,
+                '_blank',
+                'noopener,noreferrer'
+            );
+        }
+    }
 });
 
-searchInput.addEventListener('blur', ()=>{
-
-if(!searchInput.value){
-
-searchInput.classList.remove('active');
-
-rows.forEach((row,i)=>{
-
-row.style.display='';
-
-row.classList.toggle('hidden', i!==0);
-
-row.querySelectorAll('.movie').forEach(m=>{
-m.style.display='';
+searchInput.addEventListener('blur', () => {
+    if (!searchInput.value.trim()) {
+        searchInput.classList.remove('active');
+    }
 });
 
-});
+function filterMovies() {
+    const query = searchInput.value
+        .trim()
+        .toLocaleLowerCase('es');
 
-activeRow=0;
+    const cards = [
+        ...movieRow.querySelectorAll('.movie')
+    ];
 
-rows[0].querySelector('.movie')?.focus();
+    let firstMatch = null;
 
+    cards.forEach(card => {
+        const searchableText = [
+            card.dataset.title,
+            card.dataset.year,
+            card.dataset.quality,
+            card.dataset.overview
+        ].join(' ').toLocaleLowerCase('es');
+
+        const matches = searchableText.includes(query);
+
+        card.hidden = !matches;
+
+        if (matches && !firstMatch) {
+            firstMatch = card;
+        }
+    });
+
+    if (firstMatch) {
+        selectMovie(firstMatch);
+    }
 }
 
-});
+/* =====================================
+   INICIAR SHARKTV
+===================================== */
 
-searchInput.addEventListener('input', ()=>{
-
-const query = searchInput.value.toLowerCase().trim();
-
-let firstMatch=null;
-
-rows.forEach((row,rowIndex)=>{
-
-let visible=false;
-
-row.querySelectorAll('.movie').forEach(movie=>{
-
-const title = movie.dataset.title.toLowerCase();
-
-const match = title.includes(query);
-
-movie.style.display = match ? 'block' : 'none';
-
-if(match){
-
-visible=true;
-
-if(!firstMatch){
-
-firstMatch=movie;
-
-showRow(rowIndex);
-
-}
-
-}
-
-});
-
-row.style.display = visible ? 'grid' : 'none';
-
-});
-
-if(!query){
-
-rows.forEach((row,i)=>{
-
-row.style.display='';
-
-row.querySelectorAll('.movie').forEach(m=>{
-m.style.display='';
-});
-
-});
-
-showRow(0);
-
-}
-
-});
-
-/* PRIMERA PELÍCULA */
-const firstMovie = rows[0].querySelector('.movie');
-
-if(firstMovie){
-
-firstMovie.focus();
-
-selectMovie(firstMovie);
-
-scrollToMovie(firstMovie);
-
-}
+loadMovies();
 </script>
 
 </body>
 </html>
+```
