@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -9,9 +8,7 @@
 <style>
 * { box-sizing: border-box; }
 
-html {
-    scroll-behavior: auto;
-}
+html { scroll-behavior: auto; }
 
 body {
     margin: 0;
@@ -43,17 +40,8 @@ body {
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(
-            to right,
-            rgba(0,0,0,.9) 0%,
-            rgba(0,0,0,.75) 35%,
-            transparent 100%
-        ),
-        linear-gradient(
-            to bottom,
-            transparent 30%,
-            #000 100%
-        );
+        linear-gradient(to right, rgba(0,0,0,.9) 0%, rgba(0,0,0,.75) 35%, transparent 100%),
+        linear-gradient(to bottom, transparent 30%, #000 100%);
     pointer-events: none;
 }
 
@@ -65,14 +53,9 @@ body {
     transition: opacity .25s ease;
 }
 
-.header-info.visible {
-    opacity: 1;
-}
+.header-info.visible { opacity: 1; }
 
-.header h1 {
-    margin: 0;
-    min-height: 1px;
-}
+.header h1 { margin: 0; }
 
 .header h1 img {
     display: block;
@@ -125,9 +108,7 @@ body {
     transform: translateZ(0);
 }
 
-.movie[hidden] {
-    display: none !important;
-}
+.movie[hidden] { display: none !important; }
 
 .movie img {
     display: block;
@@ -179,10 +160,6 @@ body {
 .search-button:focus,
 .search-button:focus-visible {
     transform: scale(1.3);
-}
-
-/* No se dibuja un rectángulo alrededor de la lupa */
-.search-button:focus-visible {
     outline: none;
 }
 
@@ -208,11 +185,8 @@ body {
     pointer-events: auto;
 }
 
-.search-input:focus {
-    border-color: rgba(255,255,255,.9);
-}
+.search-input:focus { border-color: rgba(255,255,255,.9); }
 
-/* ESTADO */
 .status {
     color: #aaa;
     font-size: 14px;
@@ -220,16 +194,11 @@ body {
 }
 
 @media (max-width: 900px) {
-    .movie-row {
-        grid-template-columns: repeat(5, 105px);
-    }
+    .movie-row { grid-template-columns: repeat(5, 105px); }
 }
 
 @media (max-width: 600px) {
-    .header {
-        height: 320px;
-        padding: 15px;
-    }
+    .header { height: 320px; padding: 15px; }
 
     .header h1 img {
         max-width: 240px;
@@ -251,9 +220,7 @@ body {
         top: 15px;
     }
 
-    .search-input.active {
-        width: 170px;
-    }
+    .search-input.active { width: 170px; }
 }
 </style>
 </head>
@@ -262,26 +229,16 @@ body {
 
 <!-- BUSCADOR -->
 <div class="search-container">
-    <button
-        class="search-button"
-        id="search-button"
-        type="button"
-        aria-label="Abrir buscador"
-        title="Buscar"
-    >
+    <button id="search-button" class="search-button"
+        type="button" aria-label="Abrir buscador" tabindex="0">
         <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C8.01 14 6 11.99 6 9.5S8.01 5 10.5 5 15 7.01 15 9.5 12.99 14 10.5 14z"/>
         </svg>
     </button>
 
-    <input
-        type="text"
-        id="search"
-        class="search-input"
-        placeholder="Buscar película..."
-        aria-label="Buscar películas"
-        autocomplete="off"
-    >
+    <input id="search" class="search-input" type="text"
+        placeholder="Buscar película..." aria-label="Buscar películas"
+        autocomplete="off" tabindex="0">
 </div>
 
 <!-- CABECERA -->
@@ -307,7 +264,6 @@ const info = document.getElementById('info');
 const titleElement = document.getElementById('title');
 const metaElement = document.getElementById('meta');
 const overviewElement = document.getElementById('overview');
-
 const searchInput = document.getElementById('search');
 const searchButton = document.getElementById('search-button');
 const movieRow = document.getElementById('movie-row');
@@ -325,10 +281,9 @@ async function loadMovies() {
     statusElement.textContent = 'Cargando películas...';
 
     try {
-        const response = await fetch(
-            './peliculas.json?t=' + Date.now(),
-            { cache: 'no-store' }
-        );
+        const response = await fetch('./peliculas.json?t=' + Date.now(), {
+            cache: 'no-store'
+        });
 
         if (!response.ok) {
             throw new Error('Error HTTP ' + response.status);
@@ -352,13 +307,11 @@ async function loadMovies() {
 }
 
 /* =====================================
-   DATOS DE LA PELÍCULA
+   DATOS DE PELÍCULAS
 ===================================== */
 
 function getYoutubeUrl(movie) {
-    if (movie.youtube_url) {
-        return movie.youtube_url;
-    }
+    if (movie.youtube_url) return movie.youtube_url;
 
     if (movie.youtube_id) {
         return 'https://www.youtube.com/watch?v=' +
@@ -373,9 +326,7 @@ function getYear(movie) {
         return String(movie.release_date).slice(0, 4);
     }
 
-    if (movie.year) {
-        return String(movie.year);
-    }
+    if (movie.year) return String(movie.year);
 
     const title = movie.youtube_title || movie.title || '';
     const match = title.match(/\b(19\d{2}|20\d{2})\b/);
@@ -386,46 +337,32 @@ function getYear(movie) {
 function getRuntime(movie) {
     const runtime = Number(movie.runtime || movie.duration_minutes || 0);
 
-    if (!runtime || runtime <= 0) {
-        return '';
-    }
+    if (!runtime || runtime <= 0) return '';
 
     const hours = Math.floor(runtime / 60);
     const minutes = runtime % 60;
 
-    if (hours && minutes) {
-        return hours + ' h ' + minutes + ' min';
-    }
-
-    if (hours) {
-        return hours + ' h';
-    }
+    if (hours && minutes) return hours + ' h ' + minutes + ' min';
+    if (hours) return hours + ' h';
 
     return minutes + ' min';
 }
 
 function getGenres(movie) {
     if (Array.isArray(movie.genres)) {
-        return movie.genres
-            .map(genre => {
-                if (typeof genre === 'string') return genre;
-                return genre && genre.name ? genre.name : '';
-            })
-            .filter(Boolean)
-            .join(', ');
+        return movie.genres.map(genre => {
+            if (typeof genre === 'string') return genre;
+            return genre && genre.name ? genre.name : '';
+        }).filter(Boolean).join(', ');
     }
 
-    if (typeof movie.genres === 'string') {
-        return movie.genres;
-    }
+    if (typeof movie.genres === 'string') return movie.genres;
 
     return movie.genre || movie.genre_label || '';
 }
 
 function getQuality(movie) {
-    if (movie.quality) {
-        return movie.quality;
-    }
+    if (movie.quality) return movie.quality;
 
     const text = (
         (movie.youtube_title || '') + ' ' +
@@ -472,7 +409,6 @@ function renderMovies() {
 
     validMovies.forEach(movie => {
         const card = document.createElement('a');
-
         card.className = 'movie';
         card.tabIndex = 0;
 
@@ -484,12 +420,9 @@ function renderMovies() {
             card.rel = 'noopener noreferrer';
         }
 
-        card.dataset.title =
-            movie.title || movie.youtube_title || 'Película';
-
+        card.dataset.title = movie.title || movie.youtube_title || 'Película';
         card.dataset.logo = movie.logo || movie.movie_logo || '';
         card.dataset.banner = movie.backdrop || '';
-        card.dataset.poster = movie.poster || '';
         card.dataset.overview = movie.overview || '';
         card.dataset.year = getYear(movie);
         card.dataset.runtime = getRuntime(movie);
@@ -498,7 +431,6 @@ function renderMovies() {
         card.dataset.age = getAgeRating(movie);
 
         const poster = document.createElement('img');
-
         poster.alt = '';
         poster.loading = 'lazy';
         poster.decoding = 'async';
@@ -518,25 +450,20 @@ function renderMovies() {
         movieRow.appendChild(card);
 
         card.addEventListener('focus', () => selectMovie(card));
-
         card.addEventListener('mouseenter', () => selectMovie(card));
 
         card.addEventListener('click', event => {
-            if (!card.href) {
-                event.preventDefault();
-            }
+            if (!card.href) event.preventDefault();
         });
     });
 
-    const firstMovie = getVisibleCards()[0];
+    const first = getVisibleCards()[0];
 
-    if (firstMovie) {
-        selectMovie(firstMovie);
-    }
+    if (first) selectMovie(first);
 }
 
 /* =====================================
-   MOSTRAR INFORMACIÓN EN EL BANNER
+   ACTUALIZAR BANNER
 ===================================== */
 
 function selectMovie(card) {
@@ -549,10 +476,7 @@ function selectMovie(card) {
     });
 
     const banner = card.dataset.banner;
-
-    header.style.backgroundImage = banner
-        ? 'url("' + banner + '")'
-        : 'none';
+    header.style.backgroundImage = banner ? 'url("' + banner + '")' : 'none';
 
     const movieTitle = card.dataset.title || 'Película';
     const logo = card.dataset.logo;
@@ -561,7 +485,6 @@ function selectMovie(card) {
 
     if (logo) {
         const image = document.createElement('img');
-
         image.src = logo;
         image.alt = movieTitle;
 
@@ -585,7 +508,6 @@ function selectMovie(card) {
 
     metaElement.textContent = metadata.join('  |  ');
     overviewElement.textContent = card.dataset.overview || '';
-
     info.classList.add('visible');
 }
 
@@ -603,17 +525,17 @@ function getColumns() {
     return 8;
 }
 
-function focusFirstVisibleMovie() {
-    const first = getVisibleCards()[0];
-
-    if (first) {
-        first.focus();
-        scrollToMovie(first);
-    }
-}
-
 function focusSearchButton() {
     searchButton.focus();
+}
+
+function focusFirstVisibleMovie() {
+    const cards = getVisibleCards();
+
+    if (cards.length) {
+        cards[0].focus();
+        scrollToMovie(cards[0]);
+    }
 }
 
 function scrollToMovie(card) {
@@ -629,13 +551,64 @@ function scrollToMovie(card) {
     }
 }
 
-/* Gestionar las flechas tanto en la lupa como en las portadas */
-document.addEventListener('keydown', event => {
+function openSearch() {
+    searchInput.classList.add('active');
+    searchInput.focus();
+}
+
+function closeSearch() {
+    searchInput.value = '';
+    filterMovies();
+    searchInput.classList.remove('active');
+    searchInput.blur();
+    searchButton.focus();
+}
+
+/* Compatibilidad con flechas y códigos Android TV */
+document.addEventListener('keydown', function(event) {
+    const key = event.key;
+    const code = event.keyCode;
     const target = event.target;
 
-    /* Navegación desde la lupa */
+    const up = key === 'ArrowUp' || code === 19 || code === 38;
+    const down = key === 'ArrowDown' || code === 20 || code === 40;
+    const left = key === 'ArrowLeft' || code === 21 || code === 37;
+    const right = key === 'ArrowRight' || code === 22 || code === 39;
+    const ok = key === 'Enter' || key === ' ' || code === 23 || code === 66;
+    const back = key === 'Escape' || key === 'Backspace' || code === 4 || code === 27;
+
+    /* Dentro del campo de búsqueda */
+    if (target === searchInput) {
+        if (back) {
+            event.preventDefault();
+            closeSearch();
+            return;
+        }
+
+        if (down) {
+            event.preventDefault();
+            focusFirstVisibleMovie();
+            return;
+        }
+
+        if (up) {
+            event.preventDefault();
+            focusSearchButton();
+            return;
+        }
+
+        return;
+    }
+
+    /* Sobre la lupa */
     if (target === searchButton) {
-        if (event.key === 'ArrowDown') {
+        if (ok) {
+            event.preventDefault();
+            openSearch();
+            return;
+        }
+
+        if (down) {
             event.preventDefault();
 
             if (searchInput.classList.contains('active')) {
@@ -643,84 +616,52 @@ document.addEventListener('keydown', event => {
             } else {
                 focusFirstVisibleMovie();
             }
+
+            return;
         }
 
-        if (event.key === 'ArrowLeft') {
+        if (left || right || up) {
             event.preventDefault();
+            return;
         }
-
-        if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            openSearch();
-        }
-
-        return;
     }
 
-    /* No interceptar las flechas mientras se escribe */
-    if (target === searchInput) {
-        if (event.key === 'ArrowUp') {
+    /* Sobre las carátulas */
+    const cards = getVisibleCards();
+    const index = cards.indexOf(target);
+
+    if (index < 0) return;
+
+    const columns = getColumns();
+    let next = index;
+
+    if (right) {
+        next = Math.min(index + 1, cards.length - 1);
+    } else if (left) {
+        if (index % columns === 0) {
             event.preventDefault();
             focusSearchButton();
+            return;
         }
-
-        if (event.key === 'Escape' || event.key === 'Backspace' &&
-            searchInput.value === '') {
-            if (event.key === 'Escape') {
-                closeSearch(true);
-            }
+        next = index - 1;
+    } else if (down) {
+        next = Math.min(index + columns, cards.length - 1);
+    } else if (up) {
+        if (index < columns) {
+            event.preventDefault();
+            focusSearchButton();
+            return;
         }
-
+        next = index - columns;
+    } else {
         return;
     }
-
-    const cards = getVisibleCards();
-    const currentIndex = cards.indexOf(target);
-
-    if (currentIndex < 0) return;
-
-    let nextIndex = currentIndex;
-    let handled = true;
-    const columns = getColumns();
-
-    switch (event.key) {
-        case 'ArrowRight':
-            nextIndex = Math.min(currentIndex + 1, cards.length - 1);
-            break;
-
-        case 'ArrowLeft':
-            if (currentIndex % columns === 0) {
-                focusSearchButton();
-                event.preventDefault();
-                return;
-            }
-            nextIndex = currentIndex - 1;
-            break;
-
-        case 'ArrowDown':
-            nextIndex = Math.min(currentIndex + columns, cards.length - 1);
-            break;
-
-        case 'ArrowUp':
-            if (currentIndex < columns) {
-                focusSearchButton();
-                event.preventDefault();
-                return;
-            }
-            nextIndex = currentIndex - columns;
-            break;
-
-        default:
-            handled = false;
-    }
-
-    if (!handled) return;
 
     event.preventDefault();
 
-    if (cards[nextIndex]) {
-        cards[nextIndex].focus();
-        scrollToMovie(cards[nextIndex]);
+    if (cards[next]) {
+        cards[next].focus();
+        scrollToMovie(cards[next]);
     }
 });
 
@@ -728,50 +669,23 @@ document.addEventListener('keydown', event => {
    BUSCADOR
 ===================================== */
 
-function openSearch() {
-    searchInput.classList.add('active');
-    searchInput.focus();
-}
-
-function closeSearch(returnToButton) {
-    searchInput.value = '';
-    filterMovies();
-    searchInput.classList.remove('active');
-    searchInput.blur();
-
-    if (returnToButton) {
-        searchButton.focus();
-    }
-}
-
 searchButton.addEventListener('click', openSearch);
-
 searchInput.addEventListener('input', filterMovies);
 
-searchInput.addEventListener('keydown', event => {
+searchInput.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         event.preventDefault();
-        closeSearch(true);
-        return;
-    }
-
-    if (event.key === 'ArrowDown') {
+        closeSearch();
+    } else if (event.key === 'ArrowDown') {
         event.preventDefault();
         focusFirstVisibleMovie();
-        return;
-    }
-
-    if (event.key === 'Enter') {
+    } else if (event.key === 'Enter') {
         event.preventDefault();
 
         const first = getVisibleCards()[0];
 
         if (first && first.href) {
-            window.open(
-                first.href,
-                '_blank',
-                'noopener,noreferrer'
-            );
+            window.open(first.href, '_blank', 'noopener,noreferrer');
         }
     }
 });
@@ -783,15 +697,12 @@ searchInput.addEventListener('blur', () => {
 });
 
 function filterMovies() {
-    const query = searchInput.value
-        .trim()
-        .toLocaleLowerCase('es');
-
+    const query = searchInput.value.trim().toLocaleLowerCase('es');
     const cards = [...movieRow.querySelectorAll('.movie')];
     let firstMatch = null;
 
     cards.forEach(card => {
-        const searchableText = [
+        const text = [
             card.dataset.title,
             card.dataset.year,
             card.dataset.genres,
@@ -800,13 +711,10 @@ function filterMovies() {
             card.dataset.overview
         ].join(' ').toLocaleLowerCase('es');
 
-        const matches = searchableText.includes(query);
-
+        const matches = text.includes(query);
         card.hidden = !matches;
 
-        if (matches && !firstMatch) {
-            firstMatch = card;
-        }
+        if (matches && !firstMatch) firstMatch = card;
     });
 
     if (firstMatch) {
@@ -817,10 +725,7 @@ function filterMovies() {
     }
 }
 
-/* =====================================
-   INICIAR
-===================================== */
-
+/* ARRANQUE */
 loadMovies();
 </script>
 
