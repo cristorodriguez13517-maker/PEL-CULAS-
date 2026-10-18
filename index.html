@@ -729,5 +729,34 @@ function filterMovies() {
 loadMovies();
 </script>
 
+
+    <script>
+window.addEventListener("keydown", function(e) {
+  const teclas = {
+    ArrowUp: "FLECHA ARRIBA",
+    ArrowDown: "FLECHA ABAJO",
+    ArrowLeft: "FLECHA IZQUIERDA",
+    ArrowRight: "FLECHA DERECHA",
+    Enter: "ENTER"
+  };
+
+  const mensaje = teclas[e.key] || ("Tecla detectada: " + e.key);
+
+  let aviso = document.getElementById("prueba-teclado");
+
+  if (!aviso) {
+    aviso = document.createElement("div");
+    aviso.id = "prueba-teclado";
+    aviso.style.cssText =
+      "position:fixed;top:10px;left:10px;z-index:999999;" +
+      "background:#e50914;color:white;padding:15px;" +
+      "font: bold 18px Arial;border-radius:8px;";
+    document.body.appendChild(aviso);
+  }
+
+  aviso.textContent = mensaje + " | código: " + e.keyCode;
+}, true);
+</script>
+
 </body>
 </html>
