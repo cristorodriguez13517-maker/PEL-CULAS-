@@ -352,10 +352,16 @@ function getQuality(movie) {
     return '';
 }
 
+
 function getAgeRating(movie) {
-    return movie.age_rating || movie.age_certification ||
-        movie.certification || movie.certificacion || '';
+    return movie.age_rating_manual ||
+           movie.age_rating ||
+           movie.age_certification ||
+           movie.certification ||
+           movie.certificacion ||
+           '';
 }
+
 
 /* CARÁTULAS */
 
