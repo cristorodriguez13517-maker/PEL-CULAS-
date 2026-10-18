@@ -18,7 +18,7 @@
     ],
     "quality": "4K",
     "age_rating": "12",
-    "age_rating_manual": "",
+    "age_rating_manual": "12+",
     "match_status": "encontrada",
     "youtube_url": "https://www.youtube.com/watch?v=JbrFdW_-45E"
   },
@@ -41,7 +41,7 @@
     ],
     "quality": "4K",
     "age_rating": "18",
-    "age_rating_manual": "",
+    "age_rating_manual": "18+",
     "match_status": "encontrada",
     "youtube_url": "https://www.youtube.com/watch?v=yp_vxNUi9xQ"
   }
