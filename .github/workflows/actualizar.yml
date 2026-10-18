@@ -1,4 +1,3 @@
-```yaml
 name: Actualizar catalogo SHARKTV
 
 on:
@@ -40,4 +39,4 @@ jobs:
             git commit -m "Actualizar catalogo de peliculas"
             git push
           fi
-```
+
